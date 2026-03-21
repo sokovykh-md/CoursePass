@@ -89,7 +89,7 @@ mfd-model:
 mfd-repo: --check-ns
 	@mfd-generator repo -m ./docs/model/$(NAME).mfd -p db -o ./pkg/db -n $(NS)
 mfd-db-test:
-	@mfd-generator dbtest -m docs/model/$(NAME).mfd -o ./pkg/db/test -x $(NAME)/pkg/db
+	@mfd-generator dbtest -m docs/model/$(NAME).mfd -o ./pkg/db/test -x $(NAME)/pkg/db --force
 mfd-vt-xml:
 	@mfd-generator xml-vt -m ./docs/model/$(NAME).mfd
 mfd-vt-rpc: --check-ns
