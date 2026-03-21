@@ -3,8 +3,8 @@ package app
 import (
 	"net/http"
 
-	"apisrv/pkg/db"
-	"apisrv/pkg/vt"
+	"courses/pkg/db"
+	"courses/pkg/vt"
 
 	"github.com/labstack/echo/v4"
 	"github.com/vmkteam/appkit"

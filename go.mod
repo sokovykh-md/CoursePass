@@ -1,4 +1,4 @@
-module apisrv
+module courses
 
 go 1.25
 

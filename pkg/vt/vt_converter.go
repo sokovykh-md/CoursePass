@@ -1,7 +1,7 @@
 package vt
 
 import (
-	"apisrv/pkg/db"
+	"courses/pkg/db"
 )
 
 func NewUser(in *db.User) *User {

@@ -4,7 +4,7 @@ package vt
 import (
 	"time"
 
-	"apisrv/pkg/db"
+	"courses/pkg/db"
 )
 
 type User struct {

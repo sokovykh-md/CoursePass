@@ -4,7 +4,7 @@ package vt
 import (
 	"path"
 
-	"apisrv/pkg/db"
+	"courses/pkg/db"
 )
 
 const (

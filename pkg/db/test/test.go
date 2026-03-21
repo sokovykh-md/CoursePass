@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"apisrv/pkg/db"
+	"courses/pkg/db"
 
 	"github.com/go-pg/pg/v10"
 	"github.com/vmkteam/embedlog"
@@ -51,7 +51,7 @@ func setup() (*pg.DB, error) {
 	var (
 		pghost = getenv("PGHOST", "localhost")
 		pgport = getenv("PGPORT", "5432")
-		pgdb   = getenv("PGDATABASE", "test-apisrv")
+		pgdb   = getenv("PGDATABASE", "test-courses")
 		pguser = getenv("PGUSER", "postgres")
 		pgpass = getenv("PGPASSWORD", "postgres")
 	)

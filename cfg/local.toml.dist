@@ -7,10 +7,10 @@ EnableVFS = true
 [Database]
 Addr            = "localhost:5432"
 User            = "postgres"
-Database        = "apisrv"
+Database        = "courses"
 Password        = ""
 PoolSize        = 5
-ApplicationName = "apisrv"
+ApplicationName = "courses"
 
 [Sentry]
 DSN         = ""

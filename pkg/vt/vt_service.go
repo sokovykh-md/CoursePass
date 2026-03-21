@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"apisrv/pkg/db"
+	"courses/pkg/db"
 
 	"github.com/vmkteam/embedlog"
 	"github.com/vmkteam/zenrpc/v2"

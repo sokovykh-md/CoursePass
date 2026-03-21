@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"apisrv/pkg/db"
-	"apisrv/pkg/vt"
+	"courses/pkg/db"
+	"courses/pkg/vt"
 
 	"github.com/go-pg/pg/v10"
 	monitor "github.com/hypnoglow/go-pg-monitor"

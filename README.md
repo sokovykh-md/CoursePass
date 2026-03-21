@@ -1,3 +1,3 @@
-# apisrv 
+# courses 
 
 Run `make init` first.
