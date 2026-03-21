@@ -1,5 +1,5 @@
 <VTNamespace xmlns:xsi="" xmlns:xsd="">
-    <Name>common</Name>
+    <Name>courses</Name>
     <VTEntities>
         <Entity Name="User" Mode="None">
             <TerminalPath>users</TerminalPath>

@@ -1,0 +1,98 @@
+<Package xmlns:xsi="" xmlns:xsd="">
+    <Name>courses</Name>
+    <Entities>
+        <Entity Name="User" Namespace="courses" Table="users">
+            <Attributes>
+                <Attribute Name="ID" DBName="userId" DBType="int4" GoType="int" PK="true" Nullable="Yes" Addable="true" Updatable="true" Min="0" Max="0" HasDefault="true"></Attribute>
+                <Attribute Name="CreatedAt" DBName="createdAt" DBType="timestamptz" GoType="time.Time" PK="false" Nullable="No" Addable="false" Updatable="false" Min="0" Max="0" HasDefault="true"></Attribute>
+                <Attribute Name="Login" DBName="login" DBType="varchar" GoType="string" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="64"></Attribute>
+                <Attribute Name="Password" DBName="password" DBType="varchar" GoType="string" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="64"></Attribute>
+                <Attribute Name="AuthKey" DBName="authKey" DBType="varchar" GoType="string" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="32"></Attribute>
+                <Attribute Name="LastActivityAt" DBName="lastActivityAt" DBType="timestamptz" GoType="*time.Time" PK="false" Nullable="Yes" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+                <Attribute Name="StatusID" DBName="statusId" DBType="int4" GoType="int" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+            </Attributes>
+            <Searches>
+                <Search Name="IDs" AttrName="ID" SearchType="SEARCHTYPE_ARRAY"></Search>
+                <Search Name="NotID" AttrName="ID" SearchType="SEARCHTYPE_NOT_EQUALS"></Search>
+                <Search Name="LoginILike" AttrName="Login" SearchType="SEARCHTYPE_ILIKE"></Search>
+                <Search Name="PasswordILike" AttrName="Password" SearchType="SEARCHTYPE_ILIKE"></Search>
+                <Search Name="AuthKeyILike" AttrName="AuthKey" SearchType="SEARCHTYPE_ILIKE"></Search>
+                <Search Name="LastActivityAtFrom" AttrName="LastActivityAt" SearchType="SEARCHTYPE_GE"></Search>
+                <Search Name="LastActivityAtTo" AttrName="LastActivityAt" SearchType="SEARCHTYPE_LE"></Search>
+            </Searches>
+        </Entity>
+        <Entity Name="Course" Namespace="courses" Table="courses">
+            <Attributes>
+                <Attribute Name="ID" DBName="courseId" DBType="int4" GoType="int" PK="true" Nullable="Yes" Addable="true" Updatable="false" Min="0" Max="0" HasDefault="true"></Attribute>
+                <Attribute Name="Title" DBName="title" DBType="varchar" GoType="string" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="255"></Attribute>
+                <Attribute Name="Description" DBName="description" DBType="text" GoType="string" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+                <Attribute Name="AvailabilityType" DBName="availabilityType" DBType="varchar" GoType="string" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="255" HasDefault="true"></Attribute>
+                <Attribute Name="AvailableFrom" DBName="availableFrom" DBType="timestamptz" GoType="*time.Time" PK="false" Nullable="Yes" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+                <Attribute Name="AvailableTo" DBName="availableTo" DBType="timestamptz" GoType="*time.Time" PK="false" Nullable="Yes" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+                <Attribute Name="TimeLimitMinutes" DBName="timeLimitMinutes" DBType="int4" GoType="*int" PK="false" Nullable="Yes" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+                <Attribute Name="CreatedAt" DBName="createdAt" DBType="timestamptz" GoType="time.Time" PK="false" Nullable="No" Addable="false" Updatable="false" Min="0" Max="0" HasDefault="true"></Attribute>
+                <Attribute Name="StatusID" DBName="statusId" DBType="int4" GoType="int" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+            </Attributes>
+            <Searches>
+                <Search Name="IDs" AttrName="ID" SearchType="SEARCHTYPE_ARRAY"></Search>
+                <Search Name="TitleILike" AttrName="Title" SearchType="SEARCHTYPE_ILIKE"></Search>
+                <Search Name="DescriptionILike" AttrName="Description" SearchType="SEARCHTYPE_ILIKE"></Search>
+                <Search Name="AvailabilityTypeILike" AttrName="AvailabilityType" SearchType="SEARCHTYPE_ILIKE"></Search>
+            </Searches>
+        </Entity>
+        <Entity Name="Exam" Namespace="courses" Table="exams">
+            <Attributes>
+                <Attribute Name="ID" DBName="examId" DBType="int4" GoType="int" PK="true" Nullable="Yes" Addable="true" Updatable="false" Min="0" Max="0" HasDefault="true"></Attribute>
+                <Attribute Name="CourseID" DBName="courseId" DBType="int4" GoType="int" PK="false" FK="Course" Nullable="No" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+                <Attribute Name="StudentID" DBName="studentId" DBType="int4" GoType="int" PK="false" FK="Student" Nullable="No" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+                <Attribute Name="Answers" DBName="answers" DBType="jsonb" GoType="ExamAnswers" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="0" HasDefault="true"></Attribute>
+                <Attribute Name="TotalQuestions" DBName="totalQuestions" DBType="int4" GoType="*int" PK="false" Nullable="Yes" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+                <Attribute Name="CorrectAnswers" DBName="correctAnswers" DBType="int4" GoType="*int" PK="false" Nullable="Yes" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+                <Attribute Name="Status" DBName="status" DBType="varchar" GoType="string" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="255" HasDefault="true"></Attribute>
+                <Attribute Name="FinalScore" DBName="finalScore" DBType="numeric" GoType="*float64" PK="false" Nullable="Yes" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+                <Attribute Name="FinishedAt" DBName="finishedAt" DBType="timestamptz" GoType="*time.Time" PK="false" Nullable="Yes" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+                <Attribute Name="CreatedAt" DBName="createdAt" DBType="timestamptz" GoType="time.Time" PK="false" Nullable="No" Addable="false" Updatable="false" Min="0" Max="0" HasDefault="true"></Attribute>
+            </Attributes>
+            <Searches>
+                <Search Name="IDs" AttrName="ID" SearchType="SEARCHTYPE_ARRAY"></Search>
+                <Search Name="StatusILike" AttrName="Status" SearchType="SEARCHTYPE_ILIKE"></Search>
+            </Searches>
+        </Entity>
+        <Entity Name="Question" Namespace="courses" Table="questions">
+            <Attributes>
+                <Attribute Name="ID" DBName="questionId" DBType="int4" GoType="int" PK="true" Nullable="Yes" Addable="true" Updatable="false" Min="0" Max="0" HasDefault="true"></Attribute>
+                <Attribute Name="CourseID" DBName="courseId" DBType="int4" GoType="int" PK="false" FK="Course" Nullable="No" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+                <Attribute Name="PhotoFileID" DBName="photoFileId" DBType="int4" GoType="*int" PK="false" FK="VfsFile" Nullable="Yes" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+                <Attribute Name="QuestionText" DBName="questionText" DBType="text" GoType="string" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+                <Attribute Name="Options" DBName="options" DBType="jsonb" GoType="QuestionOptions" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="0" HasDefault="true"></Attribute>
+                <Attribute Name="QuestionType" DBName="questionType" DBType="varchar" GoType="string" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="255" HasDefault="true"></Attribute>
+                <Attribute Name="CreatedAt" DBName="createdAt" DBType="timestamptz" GoType="time.Time" PK="false" Nullable="No" Addable="false" Updatable="false" Min="0" Max="0" HasDefault="true"></Attribute>
+            </Attributes>
+            <Searches>
+                <Search Name="IDs" AttrName="ID" SearchType="SEARCHTYPE_ARRAY"></Search>
+                <Search Name="QuestionTextILike" AttrName="QuestionText" SearchType="SEARCHTYPE_ILIKE"></Search>
+                <Search Name="QuestionTypeILike" AttrName="QuestionType" SearchType="SEARCHTYPE_ILIKE"></Search>
+            </Searches>
+        </Entity>
+        <Entity Name="Student" Namespace="courses" Table="students">
+            <Attributes>
+                <Attribute Name="ID" DBName="studentId" DBType="int4" GoType="int" PK="true" Nullable="Yes" Addable="true" Updatable="false" Min="0" Max="0" HasDefault="true"></Attribute>
+                <Attribute Name="Login" DBName="login" DBType="varchar" GoType="string" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="255"></Attribute>
+                <Attribute Name="PasswordHash" DBName="passwordHash" DBType="varchar" GoType="string" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="255"></Attribute>
+                <Attribute Name="FirstName" DBName="firstName" DBType="varchar" GoType="string" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="255"></Attribute>
+                <Attribute Name="LastName" DBName="lastName" DBType="varchar" GoType="string" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="255"></Attribute>
+                <Attribute Name="Email" DBName="email" DBType="varchar" GoType="string" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="255"></Attribute>
+                <Attribute Name="CreatedAt" DBName="createdAt" DBType="timestamptz" GoType="time.Time" PK="false" Nullable="No" Addable="false" Updatable="false" Min="0" Max="0" HasDefault="true"></Attribute>
+                <Attribute Name="StatusID" DBName="statusId" DBType="int4" GoType="int" PK="false" Nullable="No" Addable="true" Updatable="true" Min="0" Max="0"></Attribute>
+            </Attributes>
+            <Searches>
+                <Search Name="IDs" AttrName="ID" SearchType="SEARCHTYPE_ARRAY"></Search>
+                <Search Name="LoginILike" AttrName="Login" SearchType="SEARCHTYPE_ILIKE"></Search>
+                <Search Name="PasswordHashILike" AttrName="PasswordHash" SearchType="SEARCHTYPE_ILIKE"></Search>
+                <Search Name="FirstNameILike" AttrName="FirstName" SearchType="SEARCHTYPE_ILIKE"></Search>
+                <Search Name="LastNameILike" AttrName="LastName" SearchType="SEARCHTYPE_ILIKE"></Search>
+                <Search Name="EmailILike" AttrName="Email" SearchType="SEARCHTYPE_ILIKE"></Search>
+            </Searches>
+        </Entity>
+    </Entities>
+</Package>
