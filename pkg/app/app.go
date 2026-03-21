@@ -30,6 +30,10 @@ type Config struct {
 		Environment string
 		DSN         string
 	}
+	Auth struct {
+		JWTSecret     string
+		JWTTTLSeconds int
+	}
 	VFS vfs.Config
 }
 

@@ -3,6 +3,7 @@ package rpc
 import (
 	"net/http"
 
+	"courses/pkg/course"
 	"courses/pkg/db"
 
 	"github.com/vmkteam/embedlog"
@@ -15,6 +16,10 @@ var (
 	ErrInternal       = zenrpc.NewStringError(http.StatusInternalServerError, "internal error")
 )
 
+const (
+	NSCourse = "course"
+)
+
 var allowDebugFn = func() zm.AllowDebugFunc {
 	return func(req *http.Request) bool {
 		return req != nil && req.FormValue("__level") == "5"
@@ -24,7 +29,7 @@ var allowDebugFn = func() zm.AllowDebugFunc {
 //go:generate go tool zenrpc
 
 // New returns new zenrpc Server.
-func New(dbo db.DB, logger embedlog.Logger, isDevel bool) *zenrpc.Server {
+func New(dbo db.DB, logger embedlog.Logger, authCfg course.AuthConfig, isDevel bool) *zenrpc.Server {
 	rpc := zenrpc.NewServer(zenrpc.Options{
 		ExposeSMD: true,
 		AllowCORS: true,
@@ -43,11 +48,12 @@ func New(dbo db.DB, logger embedlog.Logger, isDevel bool) *zenrpc.Server {
 	rpc.Use(
 		zm.WithSLog(logger.Print, zm.DefaultServerName, nil),
 		zm.WithErrorSLog(logger.Print, zm.DefaultServerName, nil),
+		authMiddleware(authCfg, logger),
 	)
 
 	// services
 	rpc.RegisterAll(map[string]zenrpc.Invoker{
-		// "sample": NewSampleService(db, logger),
+		NSCourse: NewCourseService(dbo, logger, authCfg),
 	})
 
 	return rpc

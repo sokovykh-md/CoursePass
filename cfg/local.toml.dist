@@ -16,6 +16,10 @@ ApplicationName = "courses"
 DSN         = ""
 Environment = ""
 
+[Auth]
+JWTSecret     = "coursepass-dev-secret"
+JWTTTLSeconds = 86400
+
 [VFS]
 MaxFileSize      = 33_554_432 # 32MB
 Path             = "./media/"
