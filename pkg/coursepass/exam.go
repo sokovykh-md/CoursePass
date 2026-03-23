@@ -60,7 +60,7 @@ func (em *ExamManager) Start(ctx context.Context, courseID, studentID int) (Exam
 			return ErrNoQuestions
 		}
 
-		// TODO replace with colgen
+		// TODO replace with colgen (не очень понимаю, как это сделать)
 		questionIDs := make([]int, len(questions))
 		for i := range questions {
 			questionIDs[i] = questions[i].ID
