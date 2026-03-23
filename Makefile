@@ -56,6 +56,7 @@ run:
 	@go run $(GOFLAGS) $(MAIN) -config=cfg/local.toml -dev
 
 generate:
+	@go generate ./pkg/coursepass
 	@go generate ./pkg/rpc
 	@#go generate ./pkg/vt
 

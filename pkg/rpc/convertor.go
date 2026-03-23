@@ -60,10 +60,7 @@ func newCourseSummary(course coursepass.CourseSummary) CourseSummary {
 }
 
 func newCoursesSummaryResponse(courses []coursepass.CourseSummary) ListResponse {
-	result := make([]CourseSummary, len(courses))
-	for i, course := range courses {
-		result[i] = newCourseSummary(course)
-	}
+	result := newCourseSummaries(courses)
 	return ListResponse{
 		Courses: result,
 	}

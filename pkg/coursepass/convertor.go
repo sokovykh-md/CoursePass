@@ -77,14 +77,6 @@ func newCourse(course db.Course) Course {
 	}
 }
 
-func newCoursesSummary(courses []db.Course) []CourseSummary {
-	result := make([]CourseSummary, len(courses))
-	for i := range courses {
-		result[i] = newCourseSummary(courses[i])
-	}
-	return result
-}
-
 func formatTimePtr(v *time.Time) *string {
 	if v == nil {
 		return nil

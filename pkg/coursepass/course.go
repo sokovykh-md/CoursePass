@@ -37,7 +37,7 @@ func (cm *CourseManager) Summary(ctx context.Context, page, pageSize int) ([]Cou
 		return nil, fmt.Errorf("failed get courses: %w", err)
 	}
 
-	return newCoursesSummary(courses), nil
+	return newCourseSummaries(courses), nil
 }
 
 func (cm *CourseManager) ByID(ctx context.Context, courseID int) (Course, error) {
