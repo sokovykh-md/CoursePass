@@ -25,7 +25,7 @@ func NewCoursesService(dbc db.DB, logger embedlog.Logger) *CoursesService {
 }
 
 func (cs *CoursesService) Me(ctx context.Context) (MeResponse, error) {
-	studentID, ok := StudentIDFromContext(ctx)
+	studentID, ok := studentIDFromContext(ctx)
 	if !ok || studentID <= 0 {
 		cs.Logger.Error(ctx, "coursepass me failed: no studentID in context")
 		return MeResponse{}, mapRPCError(coursepass.ErrInvalidToken)

@@ -3,6 +3,7 @@ package coursepass
 import (
 	"context"
 	"fmt"
+	"math"
 	"slices"
 	"time"
 
@@ -19,6 +20,16 @@ type ExamManager struct {
 	embedlog.Logger
 }
 
+const (
+	ExamStatusPassed     = "passed"
+	ExamStatusFailed     = "failed"
+	passScorePercent     = 70
+	ExamStatusInProgress = "in_progress"
+
+	QuestionTypeSingleChoice   = "single_choice"
+	QuestionTypeMultipleChoice = "multiple_choice"
+)
+
 func NewExamManager(dbo db.DB, logger embedlog.Logger, mediaWebPath string) *ExamManager {
 	return &ExamManager{
 		db:           dbo,
@@ -28,7 +39,7 @@ func NewExamManager(dbo db.DB, logger embedlog.Logger, mediaWebPath string) *Exa
 	}
 }
 
-func (em *ExamManager) Start(ctx context.Context, courseID, studentID int) (ExamStart, error) {
+func (em *ExamManager) Start(ctx context.Context, studentID, courseID int) (ExamStart, error) {
 	currentTime := time.Now()
 	var examStart ExamStart
 
@@ -60,11 +71,7 @@ func (em *ExamManager) Start(ctx context.Context, courseID, studentID int) (Exam
 			return ErrNoQuestions
 		}
 
-		// TODO replace with colgen (не очень понимаю, как это сделать)
-		questionIDs := make([]int, len(questions))
-		for i := range questions {
-			questionIDs[i] = questions[i].ID
-		}
+		questionIDs := db.Questions(questions).IDs()
 
 		totalQuestions := len(questionIDs)
 		examData, err := txRepo.AddExam(ctx, &db.Exam{
@@ -90,7 +97,7 @@ func (em *ExamManager) Start(ctx context.Context, courseID, studentID int) (Exam
 	return examStart, nil
 }
 
-func (em *ExamManager) Question(ctx context.Context, examID, questionID, studentID int) (Question, error) {
+func (em *ExamManager) Question(ctx context.Context, studentID, questionID, examID int) (Question, error) {
 	examData, err := em.repo.OneExam(ctx, &db.ExamSearch{
 		ID:        &examID,
 		StudentID: &studentID,
@@ -195,4 +202,152 @@ func (em *ExamManager) SaveAnswer(ctx context.Context, studentID, examID, questi
 		return fmt.Errorf("failed save answer: %w", err)
 	}
 	return nil
+}
+
+func (em *ExamManager) Submit(ctx context.Context, studentID, examID int) (ExamResult, error) {
+	var examResult ExamResult
+
+	err := em.db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		txRepo := em.repo.WithTransaction(tx)
+		exam, err := txRepo.OneExam(ctx, &db.ExamSearch{
+			ID:        &examID,
+			StudentID: &studentID,
+		})
+		if err != nil {
+			return fmt.Errorf("failed get exam: %w", err)
+		}
+		if exam == nil {
+			return ErrExamNotFound
+		}
+		if exam.Status != ExamStatusInProgress {
+			return ErrExamNotInProgress
+		}
+
+		questionIDs := exam.QuestionIDs
+		totalQuestions := len(questionIDs)
+		if totalQuestions == 0 {
+			return ErrNoQuestions
+		}
+
+		questions, err := txRepo.QuestionsByFilters(
+			ctx,
+			&db.QuestionSearch{IDs: questionIDs},
+			db.PagerNoLimit,
+		)
+		if err != nil {
+			return fmt.Errorf("failed get questions: %w", err)
+		}
+
+		questionByID := db.Questions(questions).Index()
+		answerByQuestionID := db.ExamAnswerList(exam.Answers).IndexByQuestionID()
+
+		var correctAnswers int
+		for _, questionID := range questionIDs {
+			question, ok := questionByID[questionID]
+			if !ok {
+				continue
+			}
+
+			correctOptionIDs := getCorrectOptionIDs(question.Options)
+			answer, hasAnswer := answerByQuestionID[questionID]
+			if !hasAnswer {
+				continue
+			}
+
+			if equalOptionIDSets(correctOptionIDs, answer.OptionIDs) {
+				correctAnswers++
+			}
+		}
+
+		finalScore := calculateFinalScore(correctAnswers, totalQuestions)
+		status := ExamStatusFailed
+		if finalScore >= passScorePercent {
+			status = ExamStatusPassed
+		}
+
+		finishedAt := time.Now()
+		finalScoreFloat := float64(finalScore)
+		exam.Status = status
+		exam.CorrectAnswers = &correctAnswers
+		exam.TotalQuestions = &totalQuestions
+		exam.FinalScore = &finalScoreFloat
+		exam.FinishedAt = &finishedAt
+
+		updated, err := txRepo.UpdateExam(
+			ctx,
+			exam,
+			db.WithColumns(
+				db.Columns.Exam.Status,
+				db.Columns.Exam.CorrectAnswers,
+				db.Columns.Exam.TotalQuestions,
+				db.Columns.Exam.FinalScore,
+				db.Columns.Exam.FinishedAt,
+			),
+		)
+		if err != nil {
+			return fmt.Errorf("failed update exam: %w", err)
+		}
+		if !updated {
+			return ErrExamNotUpdated
+		}
+
+		examResult = ExamResult{
+			ExamID:         exam.ID,
+			Status:         status,
+			FinalScore:     finalScore,
+			CorrectAnswers: correctAnswers,
+			TotalQuestions: totalQuestions,
+		}
+
+		return nil
+	})
+	if err != nil {
+		return ExamResult{}, fmt.Errorf("failed submit exam: %w", err)
+	}
+
+	return examResult, nil
+}
+
+func getCorrectOptionIDs(options db.QuestionOptions) []int {
+	ids := make([]int, 0, len(options))
+	for i := range options {
+		if options[i].IsCorrect {
+			ids = append(ids, options[i].OptionID)
+		}
+	}
+
+	return ids
+}
+
+func equalOptionIDSets(a, b []int) bool {
+	setA := make(map[int]struct{}, len(a))
+	for _, id := range a {
+		setA[id] = struct{}{}
+	}
+
+	setB := make(map[int]struct{}, len(b))
+	for _, id := range b {
+		setB[id] = struct{}{}
+	}
+
+	if len(setA) != len(setB) {
+		return false
+	}
+
+	for id := range setA {
+		if _, ok := setB[id]; !ok {
+			return false
+		}
+	}
+
+	return true
+}
+
+func calculateFinalScore(correctAnswers, totalQuestions int) int {
+	if totalQuestions <= 0 {
+		return 0
+	}
+
+	score := (float64(correctAnswers) * 100) / float64(totalQuestions)
+	return int(math.Round(score))
 }

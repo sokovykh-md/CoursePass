@@ -28,11 +28,6 @@ const (
 	bearerTokenType        = "Bearer"
 	jwtAlgHS256            = "HS256"
 	jwtTyp                 = "JWT"
-
-	ExamStatusInProgress = "in_progress"
-
-	QuestionTypeSingleChoice   = "single_choice"
-	QuestionTypeMultipleChoice = "multiple_choice"
 )
 
 type AuthToken struct {

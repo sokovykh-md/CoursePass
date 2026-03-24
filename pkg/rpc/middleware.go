@@ -48,7 +48,7 @@ func authMiddleware(authCfg coursepass.AuthConfig, logger embedlog.Logger) zenrp
 	}
 }
 
-func StudentIDFromContext(ctx context.Context) (int, bool) {
+func studentIDFromContext(ctx context.Context) (int, bool) {
 	id, ok := ctx.Value(studentKey).(int)
 	return id, ok
 }
