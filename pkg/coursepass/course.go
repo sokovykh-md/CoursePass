@@ -53,3 +53,18 @@ func (cm *CourseManager) ByID(ctx context.Context, courseID int) (Course, error)
 
 	return newCourse(*courseData), nil
 }
+
+func (cm *CourseManager) Me(ctx context.Context, studentID int) (*Student, error) {
+	student, err := cm.repo.OneStudent(ctx, &db.StudentSearch{
+		ID: &studentID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed get student: %w", err)
+	}
+	if student == nil {
+		return nil, ErrStudentNotFound
+	}
+
+	result := newStudent(*student)
+	return &result, nil
+}

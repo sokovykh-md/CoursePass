@@ -14,13 +14,11 @@ type CoursesService struct {
 	zenrpc.Service
 	embedlog.Logger
 
-	authManager   *coursepass.AuthManager
 	courseManager *coursepass.CourseManager
 }
 
-func NewCoursesService(dbc db.DB, logger embedlog.Logger, authCfg coursepass.AuthConfig) *CoursesService {
+func NewCoursesService(dbc db.DB, logger embedlog.Logger) *CoursesService {
 	return &CoursesService{
-		authManager:   coursepass.NewAuthManager(dbc, logger, authCfg),
 		courseManager: coursepass.NewCourseManager(dbc, logger),
 		Logger:        logger,
 	}
@@ -33,7 +31,7 @@ func (cs *CoursesService) Me(ctx context.Context) (MeResponse, error) {
 		return MeResponse{}, mapRPCError(coursepass.ErrInvalidToken)
 	}
 
-	student, err := cs.authManager.Me(ctx, studentID)
+	student, err := cs.courseManager.Me(ctx, studentID)
 	if err != nil {
 		cs.Logger.Error(ctx, "coursepass me failed", "err", err)
 		return MeResponse{}, mapRPCError(err)

@@ -56,7 +56,7 @@ func New(dbo db.DB, logger embedlog.Logger, authCfg coursepass.AuthConfig, isDev
 	// services
 	rpc.RegisterAll(map[string]zenrpc.Invoker{
 		NSAuth:   NewAuthService(dbo, logger, authCfg),
-		NSCourse: NewCoursesService(dbo, logger, authCfg),
+		NSCourse: NewCoursesService(dbo, logger),
 		NSExam:   NewExamService(dbo, logger, mediaWebPath),
 	})
 

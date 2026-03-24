@@ -80,18 +80,3 @@ func (am *AuthManager) Login(ctx context.Context, login, password string) (AuthT
 
 	return newAuthToken(token, expiresIn), nil
 }
-
-func (am *AuthManager) Me(ctx context.Context, studentID int) (*Student, error) {
-	student, err := am.repo.OneStudent(ctx, &db.StudentSearch{
-		ID: &studentID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed get student: %w", err)
-	}
-	if student == nil {
-		return nil, ErrStudentNotFound
-	}
-
-	result := newStudent(*student)
-	return &result, nil
-}
