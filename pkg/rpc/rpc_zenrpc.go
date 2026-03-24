@@ -13,7 +13,7 @@ import (
 var RPC = struct {
 	AuthService    struct{ Register, Login string }
 	CoursesService struct{ Me, List, ById string }
-	ExamService    struct{ Start, Question string }
+	ExamService    struct{ Start, Question, SaveAnswer, Submit, MyList string }
 }{
 	AuthService: struct{ Register, Login string }{
 		Register: "register",
@@ -24,9 +24,12 @@ var RPC = struct {
 		List: "list",
 		ById: "byid",
 	},
-	ExamService: struct{ Start, Question string }{
-		Start:    "start",
-		Question: "question",
+	ExamService: struct{ Start, Question, SaveAnswer, Submit, MyList string }{
+		Start:      "start",
+		Question:   "question",
+		SaveAnswer: "saveanswer",
+		Submit:     "submit",
+		MyList:     "mylist",
 	},
 }
 
@@ -502,6 +505,132 @@ func (ExamService) SMD() smd.ServiceInfo {
 					},
 				},
 			},
+			"SaveAnswer": {
+				Parameters: []smd.JSONSchema{
+					{
+						Name:     "req",
+						Type:     smd.Object,
+						TypeName: "SaveAnswerRequest",
+						Properties: smd.PropertyList{
+							{
+								Name: "examId",
+								Type: smd.Integer,
+							},
+							{
+								Name: "questionId",
+								Type: smd.Integer,
+							},
+							{
+								Name: "optionIds",
+								Type: smd.Array,
+								Items: map[string]string{
+									"type": smd.Integer,
+								},
+							},
+						},
+					},
+				},
+			},
+			"Submit": {
+				Parameters: []smd.JSONSchema{
+					{
+						Name:     "req",
+						Type:     smd.Object,
+						TypeName: "ExamSubmitRequest",
+						Properties: smd.PropertyList{
+							{
+								Name: "examId",
+								Type: smd.Integer,
+							},
+						},
+					},
+				},
+				Returns: smd.JSONSchema{
+					Type:     smd.Object,
+					TypeName: "ExamResult",
+					Properties: smd.PropertyList{
+						{
+							Name: "examId",
+							Type: smd.Integer,
+						},
+						{
+							Name: "status",
+							Type: smd.String,
+						},
+						{
+							Name: "finalScore",
+							Type: smd.Integer,
+						},
+						{
+							Name: "correctAnswers",
+							Type: smd.Integer,
+						},
+						{
+							Name: "totalQuestions",
+							Type: smd.Integer,
+						},
+					},
+				},
+			},
+			"MyList": {
+				Parameters: []smd.JSONSchema{
+					{
+						Name:     "req",
+						Type:     smd.Object,
+						TypeName: "ExamMyListRequest",
+						Properties: smd.PropertyList{
+							{
+								Name: "page",
+								Type: smd.Integer,
+							},
+							{
+								Name: "pageSize",
+								Type: smd.Integer,
+							},
+						},
+					},
+				},
+				Returns: smd.JSONSchema{
+					Type:     smd.Object,
+					TypeName: "ExamMyListResponse",
+					Properties: smd.PropertyList{
+						{
+							Name: "exams",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/ExamSummary",
+							},
+						},
+					},
+					Definitions: map[string]smd.Definition{
+						"ExamSummary": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "examId",
+									Type: smd.Integer,
+								},
+								{
+									Name: "courseId",
+									Type: smd.Integer,
+								},
+								{
+									Name: "status",
+									Type: smd.String,
+								},
+								{
+									Name: "finalScore",
+									Type: smd.Integer,
+								},
+								{
+									Name: "finishedAt",
+									Type: smd.String,
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -549,6 +678,63 @@ func (s ExamService) Invoke(ctx context.Context, method string, params json.RawM
 		}
 
 		resp.Set(s.Question(ctx, args.Req))
+
+	case RPC.ExamService.SaveAnswer:
+		var args = struct {
+			Req SaveAnswerRequest `json:"req"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"req"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.SaveAnswer(ctx, args.Req))
+
+	case RPC.ExamService.Submit:
+		var args = struct {
+			Req ExamSubmitRequest `json:"req"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"req"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.Submit(ctx, args.Req))
+
+	case RPC.ExamService.MyList:
+		var args = struct {
+			Req ExamMyListRequest `json:"req"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"req"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.MyList(ctx, args.Req))
 
 	default:
 		resp = zenrpc.NewResponseError(nil, zenrpc.MethodNotFound, "", nil)

@@ -132,3 +132,27 @@ func newQuestionPhotoURL(photoFile *db.VfsFile, mediaWebPath string) *string {
 	url := path.Join(basePath, strings.TrimPrefix(photoFile.Path, "/"))
 	return &url
 }
+
+func newExamSummary(exam db.Exam) ExamSummary {
+	finalScore := 0
+	if exam.FinalScore != nil {
+		finalScore = int(*exam.FinalScore)
+	}
+
+	finishedAt := ""
+	if exam.FinishedAt != nil {
+		finishedAt = exam.FinishedAt.Format(dateTimeLayout)
+	}
+
+	return ExamSummary{
+		ExamID:     exam.ID,
+		CourseID:   exam.CourseID,
+		Status:     exam.Status,
+		FinalScore: finalScore,
+		FinishedAt: finishedAt,
+	}
+}
+
+func newExamSummaries(exams []db.Exam) []ExamSummary {
+	return Map(exams, newExamSummary)
+}

@@ -91,3 +91,33 @@ func NewQuestionOption(option coursepass.QuestionOption) QuestionOption {
 		OptionText: option.OptionText,
 	}
 }
+
+func newExamResultResponse(result coursepass.ExamResult) ExamResult {
+	return ExamResult{
+		ExamID:         result.ExamID,
+		Status:         result.Status,
+		FinalScore:     result.FinalScore,
+		CorrectAnswers: result.CorrectAnswers,
+		TotalQuestions: result.TotalQuestions,
+	}
+}
+
+func newExamSummary(summary coursepass.ExamSummary) ExamSummary {
+	return ExamSummary{
+		ExamID:     summary.ExamID,
+		CourseID:   summary.CourseID,
+		Status:     summary.Status,
+		FinalScore: summary.FinalScore,
+		FinishedAt: summary.FinishedAt,
+	}
+}
+
+func newExamSummaries(summaries []coursepass.ExamSummary) []ExamSummary {
+	return Map(summaries, newExamSummary)
+}
+
+func newExamMyListResponse(exams []coursepass.ExamSummary) ExamMyListResponse {
+	return ExamMyListResponse{
+		Exams: newExamSummaries(exams),
+	}
+}

@@ -59,6 +59,8 @@
             <Searches>
                 <Search Name="IDs" AttrName="ID" SearchType="SEARCHTYPE_ARRAY"></Search>
                 <Search Name="StatusILike" AttrName="Status" SearchType="SEARCHTYPE_ILIKE"></Search>
+                <Search Name="StatusIn" AttrName="Status" SearchType="SEARCHTYPE_ARRAY"></Search>
+
             </Searches>
         </Entity>
         <Entity Name="Question" Namespace="courses" Table="questions">

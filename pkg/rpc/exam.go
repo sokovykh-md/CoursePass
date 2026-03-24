@@ -102,5 +102,34 @@ func (es *ExamService) Submit(ctx context.Context, req ExamSubmitRequest) (ExamR
 		return ExamResult{}, mapRPCError(coursepass.ErrInvalidToken)
 	}
 
-	es.examManager.Submit(ctx, studentID, req.ExamID)
+	result, err := es.examManager.Submit(ctx, studentID, req.ExamID)
+	if err != nil {
+		es.Logger.Error(ctx, "exam submit failed", "err", err)
+		return ExamResult{}, mapRPCError(err)
+	}
+
+	return newExamResultResponse(result), nil
+}
+
+func (es *ExamService) MyList(ctx context.Context, req ExamMyListRequest) (ExamMyListResponse, error) {
+	if req.Page < 1 {
+		req.Page = 1
+	}
+	if req.PageSize < 1 {
+		req.PageSize = 10
+	}
+
+	studentID, ok := studentIDFromContext(ctx)
+	if !ok || studentID <= 0 {
+		es.Logger.Error(ctx, "exam mylist failed: no studentID in context")
+		return ExamMyListResponse{}, mapRPCError(coursepass.ErrInvalidToken)
+	}
+
+	exams, err := es.examManager.MyList(ctx, studentID, req.Page, req.PageSize)
+	if err != nil {
+		es.Logger.Error(ctx, "exam mylist failed", "err", err)
+		return ExamMyListResponse{}, mapRPCError(err)
+	}
+
+	return newExamMyListResponse(exams), nil
 }

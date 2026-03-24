@@ -230,6 +230,7 @@ type ExamSearch struct {
 	CreatedAt      *time.Time
 	IDs            []int
 	StatusILike    *string
+	StatusIn       []string
 }
 
 func (es *ExamSearch) Apply(query *orm.Query) *orm.Query {
@@ -268,6 +269,9 @@ func (es *ExamSearch) Apply(query *orm.Query) *orm.Query {
 	}
 	if es.StatusILike != nil {
 		Filter{Columns.Exam.Status, *es.StatusILike, SearchTypeILike, false}.Apply(query)
+	}
+	if len(es.StatusIn) > 0 {
+		Filter{Columns.Exam.Status, es.StatusIn, SearchTypeArray, false}.Apply(query)
 	}
 
 	es.apply(query)

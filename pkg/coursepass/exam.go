@@ -23,8 +23,8 @@ type ExamManager struct {
 const (
 	ExamStatusPassed     = "passed"
 	ExamStatusFailed     = "failed"
-	passScorePercent     = 70
 	ExamStatusInProgress = "in_progress"
+	passScorePercent     = 70
 
 	QuestionTypeSingleChoice   = "single_choice"
 	QuestionTypeMultipleChoice = "multiple_choice"
@@ -273,9 +273,7 @@ func (em *ExamManager) Submit(ctx context.Context, studentID, examID int) (ExamR
 		exam.FinalScore = &finalScoreFloat
 		exam.FinishedAt = &finishedAt
 
-		updated, err := txRepo.UpdateExam(
-			ctx,
-			exam,
+		updated, err := txRepo.UpdateExam(ctx, exam,
 			db.WithColumns(
 				db.Columns.Exam.Status,
 				db.Columns.Exam.CorrectAnswers,
@@ -306,6 +304,24 @@ func (em *ExamManager) Submit(ctx context.Context, studentID, examID int) (ExamR
 	}
 
 	return examResult, nil
+}
+
+func (em *ExamManager) MyList(ctx context.Context, studentID, page, pageSize int) ([]ExamSummary, error) {
+
+	exams, err := em.repo.ExamsByFilters(ctx, &db.ExamSearch{
+		StudentID: &studentID,
+		StatusIn:  []string{ExamStatusPassed, ExamStatusFailed},
+	}, db.Pager{
+		Page:     page,
+		PageSize: pageSize,
+	},
+		db.WithSort(db.NewSortField(db.Columns.Exam.FinishedAt, true)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed get exams: %w", err)
+	}
+
+	return newExamSummaries(exams), nil
 }
 
 func getCorrectOptionIDs(options db.QuestionOptions) []int {
