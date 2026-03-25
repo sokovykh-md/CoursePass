@@ -99,10 +99,10 @@ mfd-xml-lang:
 	#TODO: add namespaces support for xml-lang command
 	@mfd-generator xml-lang  -m ./docs/model/$(NAME).mfd
 mfd-vt-template: --check-ns type-script-client
-	@mfd-generator template -m docs/model/$(NAME).mfd  -o ../gold-vt/ -n $(NS)
+	@mfd-generator template -m docs/model/$(NAME).mfd  -o ../CoursePassFrontend/ -n $(NS)
 
 type-script-client: generate
-	@go run $(GOFLAGS) $(MAIN) -config=cfg/local.toml -ts_client > ../gold-vt/src/services/api/factory.ts
+	@go run $(GOFLAGS) $(MAIN) -config=cfg/local.toml -ts_client > ../CoursePassFrontend/src/services/api/factory.ts
 
 
 --check-ns:
