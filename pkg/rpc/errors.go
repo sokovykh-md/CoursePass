@@ -1,8 +1,9 @@
 package rpc
 
 import (
-	"courses/pkg/coursepass"
 	"errors"
+
+	"courses/pkg/coursepass"
 
 	"github.com/vmkteam/zenrpc/v2"
 )

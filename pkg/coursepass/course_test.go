@@ -1,7 +1,6 @@
 package coursepass
 
 import (
-	"errors"
 	"testing"
 	"time"
 
@@ -125,7 +124,7 @@ func TestCourseManager_ByID(t *testing.T) {
 
 		// Assert
 		require.Error(t, err)
-		assert.True(t, errors.Is(err, ErrCourseNotFound))
+		assert.ErrorIs(t, err, ErrCourseNotFound)
 	})
 }
 
@@ -167,7 +166,7 @@ func TestCourseManager_Me(t *testing.T) {
 
 		// Assert
 		require.Error(t, err)
-		assert.True(t, errors.Is(err, ErrStudentNotFound))
+		assert.ErrorIs(t, err, ErrStudentNotFound)
 	})
 }
 

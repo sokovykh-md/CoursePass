@@ -249,33 +249,12 @@ func (em *ExamManager) Submit(ctx context.Context, studentID, examID int) (ExamR
 		}
 
 		questions := newQuestions(questionData, em.mediaWebPath)
-		questionByID := Questions(questions).IndexByQuestionID()
-		answerByQuestionID := ExamAnswers(exam.Answers).IndexByQuestionID()
-
-		var correctAnswers int
-		for _, questionID := range questionIDs {
-			question, ok := questionByID[questionID]
-			if !ok {
-				continue
-			}
-
-			correctOptionIDs := getCorrectOptionIDs(question.Options)
-			answer, hasAnswer := answerByQuestionID[questionID]
-			if !hasAnswer {
-				continue
-			}
-
-			if equalOptionIDSets(correctOptionIDs, answer.OptionIDs) {
-				correctAnswers++
-			}
-		}
-
+		correctAnswers := countCorrectAnswers(questionIDs, questions, exam.Answers)
 		finalScore := calculateFinalScore(correctAnswers, totalQuestions)
 		status := ExamStatusFailed
 		if finalScore >= passScorePercent {
 			status = ExamStatusPassed
 		}
-
 		finishedAt := time.Now()
 		finalScoreFloat := float64(finalScore)
 
@@ -322,7 +301,6 @@ func (em *ExamManager) Submit(ctx context.Context, studentID, examID int) (ExamR
 }
 
 func (em *ExamManager) MyList(ctx context.Context, studentID, page, pageSize int) ([]ExamSummary, error) {
-
 	exams, err := em.repo.ExamsByFilters(ctx, &db.ExamSearch{
 		StudentID: &studentID,
 		StatusIn:  []string{ExamStatusPassed, ExamStatusFailed},
@@ -339,6 +317,31 @@ func (em *ExamManager) MyList(ctx context.Context, studentID, page, pageSize int
 	return newExamSummaries(exams), nil
 }
 
+func countCorrectAnswers(questionIDs []int, questions []Question, answers []ExamAnswer) int {
+	questionByID := Questions(questions).IndexByQuestionID()
+	answerByQuestionID := ExamAnswers(answers).IndexByQuestionID()
+
+	var correctAnswers int
+	for _, questionID := range questionIDs {
+		question, ok := questionByID[questionID]
+		if !ok {
+			continue
+		}
+
+		correctOptionIDs := getCorrectOptionIDs(question.Options)
+		answer, hasAnswer := answerByQuestionID[questionID]
+		if !hasAnswer {
+			continue
+		}
+
+		if equalOptionIDSets(correctOptionIDs, answer.OptionIDs) {
+			correctAnswers++
+		}
+	}
+
+	return correctAnswers
+}
+
 func getCorrectOptionIDs(options []QuestionOption) []int {
 	optionByCorrectness := QuestionOptions(options).GroupByIsCorrect()
 	correctOptions, ok := optionByCorrectness[true]
@@ -346,7 +349,7 @@ func getCorrectOptionIDs(options []QuestionOption) []int {
 		return nil
 	}
 
-	return QuestionOptions(correctOptions).OptionIDs()
+	return correctOptions.OptionIDs()
 }
 
 func equalOptionIDSets(a, b []int) bool {

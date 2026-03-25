@@ -1,7 +1,6 @@
 package coursepass
 
 import (
-	"errors"
 	"testing"
 	"time"
 
@@ -114,7 +113,7 @@ func TestExamManager_Start(t *testing.T) {
 		require.NoError(t, findErr)
 		require.NotNil(t, exam)
 		assert.Equal(t, ExamStatusInProgress, exam.Status)
-		assert.Equal(t, 2, len(exam.QuestionIDs))
+		assert.Len(t, exam.QuestionIDs, 2)
 	})
 
 	t.Run("no questions", func(t *testing.T) {
@@ -127,7 +126,7 @@ func TestExamManager_Start(t *testing.T) {
 
 		// Assert
 		require.Error(t, err)
-		assert.True(t, errors.Is(err, ErrNoQuestions))
+		assert.ErrorIs(t, err, ErrNoQuestions)
 	})
 }
 
@@ -148,7 +147,7 @@ func TestExamManager_Question_NotInExam(t *testing.T) {
 
 	// Assert
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, ErrQuestionNotInExam))
+	assert.ErrorIs(t, err, ErrQuestionNotInExam)
 }
 
 func TestExamManager_SaveAnswer_InvalidOptionIDs(t *testing.T) {
@@ -168,7 +167,7 @@ func TestExamManager_SaveAnswer_InvalidOptionIDs(t *testing.T) {
 
 	// Assert
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, ErrInvalidOptionIDs))
+	assert.ErrorIs(t, err, ErrInvalidOptionIDs)
 }
 
 func TestExamManager_Submit_Success(t *testing.T) {

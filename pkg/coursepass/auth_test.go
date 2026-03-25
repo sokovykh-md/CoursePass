@@ -1,7 +1,6 @@
 package coursepass
 
 import (
-	"errors"
 	"testing"
 
 	"courses/pkg/db"
@@ -43,6 +42,13 @@ func hashPassword(t *testing.T, password string) string {
 	require.NoError(t, err)
 
 	return string(hash)
+}
+
+func TestHashPassword_DifferentPasswords(t *testing.T) {
+	hashOne := hashPassword(t, "password123")
+	hashTwo := hashPassword(t, "different-password-123")
+
+	assert.NotEqual(t, hashOne, hashTwo)
 }
 
 func createStudent(
@@ -131,7 +137,7 @@ func TestAuthManager_Register_DuplicateLogin(t *testing.T) {
 
 	// Assert
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, ErrLoginExists))
+	assert.ErrorIs(t, err, ErrLoginExists)
 }
 
 func TestAuthManager_Register_DuplicateEmail(t *testing.T) {
@@ -162,7 +168,7 @@ func TestAuthManager_Register_DuplicateEmail(t *testing.T) {
 
 	// Assert
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, ErrEmailExists))
+	assert.ErrorIs(t, err, ErrEmailExists)
 }
 
 func TestAuthManager_Login_Success(t *testing.T) {
@@ -215,5 +221,5 @@ func TestAuthManager_Login_InvalidCredentials(t *testing.T) {
 
 	// Assert
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, ErrInvalidCredentials))
+	assert.ErrorIs(t, err, ErrInvalidCredentials)
 }
