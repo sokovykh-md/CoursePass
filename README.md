@@ -1,3 +1,3 @@
-# courses 
+# CoursePass Backend
 
-Run `make init` first.
+Backend-сервис для платформы онлайн-курсов: авторизация студентов, курсы и экзамены.
