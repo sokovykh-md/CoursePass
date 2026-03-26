@@ -24,7 +24,34 @@ func NewCourseManager(dbo db.DB, logger embedlog.Logger) *CourseManager {
 
 func (cm *CourseManager) Summary(ctx context.Context, page, pageSize int) ([]CourseSummary, error) {
 	currentTime := time.Now()
+	courses, err := cm.availableCourses(ctx, currentTime, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
 
+	return newCourseSummaries(courses), nil
+}
+
+func (cm *CourseManager) ByID(ctx context.Context, courseID int) (Course, error) {
+	courseData, err := cm.courseByID(ctx, courseID)
+	if err != nil {
+		return Course{}, err
+	}
+
+	return newCourse(*courseData), nil
+}
+
+func (cm *CourseManager) Me(ctx context.Context, studentID int) (*Student, error) {
+	studentData, err := cm.studentByID(ctx, studentID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := newStudent(*studentData)
+	return &result, nil
+}
+
+func (cm *CourseManager) availableCourses(ctx context.Context, currentTime time.Time, page, pageSize int) ([]db.Course, error) {
 	courses, err := cm.repo.CoursesByFilters(ctx, &db.CourseSearch{
 		AvailableFromTo: &currentTime,
 		AvailableToFrom: &currentTime,
@@ -32,39 +59,37 @@ func (cm *CourseManager) Summary(ctx context.Context, page, pageSize int) ([]Cou
 		Page:     page,
 		PageSize: pageSize,
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("failed get courses: %w", err)
 	}
 
-	return newCourseSummaries(courses), nil
+	return courses, nil
 }
 
-func (cm *CourseManager) ByID(ctx context.Context, courseID int) (Course, error) {
+func (cm *CourseManager) courseByID(ctx context.Context, courseID int) (*db.Course, error) {
 	courseData, err := cm.repo.OneCourse(ctx, &db.CourseSearch{
 		ID: &courseID,
 	})
 	if err != nil {
-		return Course{}, fmt.Errorf("failed get coursepass: %w", err)
+		return nil, fmt.Errorf("failed get coursepass: %w", err)
 	}
 	if courseData == nil {
-		return Course{}, ErrCourseNotFound
+		return nil, ErrCourseNotFound
 	}
 
-	return newCourse(*courseData), nil
+	return courseData, nil
 }
 
-func (cm *CourseManager) Me(ctx context.Context, studentID int) (*Student, error) {
-	student, err := cm.repo.OneStudent(ctx, &db.StudentSearch{
+func (cm *CourseManager) studentByID(ctx context.Context, studentID int) (*db.Student, error) {
+	studentData, err := cm.repo.OneStudent(ctx, &db.StudentSearch{
 		ID: &studentID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed get student: %w", err)
 	}
-	if student == nil {
+	if studentData == nil {
 		return nil, ErrStudentNotFound
 	}
 
-	result := newStudent(*student)
-	return &result, nil
+	return studentData, nil
 }

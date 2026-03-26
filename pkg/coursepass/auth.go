@@ -42,7 +42,8 @@ func (am *AuthManager) Register(ctx context.Context, login, password, email, fir
 		return AuthToken{}, err
 	}
 
-	return am.newTokenForStudent(newStudentAuth(*student))
+	authStudent := newStudentAuth(*student)
+	return am.newTokenForStudent(authStudent)
 }
 
 func (am *AuthManager) Login(ctx context.Context, login, password string) (AuthToken, error) {
