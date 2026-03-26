@@ -40,51 +40,28 @@ func NewExamManager(dbo db.DB, logger embedlog.Logger, mediaWebPath string) *Exa
 }
 
 func (em *ExamManager) Start(ctx context.Context, studentID, courseID int) (ExamStart, error) {
-	currentTime := time.Now()
+	now := time.Now()
 	var examStart ExamStart
 
 	err := em.db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		txRepo := em.repo.WithTransaction(tx)
 
-		courseData, err := txRepo.OneCourse(ctx, &db.CourseSearch{
-			ID:              &courseID,
-			AvailableFromTo: &currentTime,
-			AvailableToFrom: &currentTime,
-		})
+		err := em.getAvailableCourse(ctx, txRepo, courseID, now)
 		if err != nil {
-			return fmt.Errorf("failed get coursepass: %w", err)
-		}
-		if courseData == nil {
-			return ErrCourseNotFound
+			return err
 		}
 
-		questions, err := txRepo.QuestionsByFilters(
-			ctx,
-			&db.QuestionSearch{CourseID: &courseID},
-			db.PagerNoLimit,
-			db.WithSort(db.NewSortField(db.Columns.Question.ID, false)),
-		)
+		questions, err := em.getCourseQuestions(ctx, txRepo, courseID)
 		if err != nil {
-			return fmt.Errorf("failed get questions: %w", err)
-		}
-		if len(questions) == 0 {
-			return ErrNoQuestions
+			return err
 		}
 
 		courseQuestions := newQuestions(questions, em.mediaWebPath)
 		questionIDs := Questions(courseQuestions).QuestionIDs()
 
-		totalQuestions := len(questionIDs)
-		examData, err := txRepo.AddExam(ctx, &db.Exam{
-			CourseID:       courseID,
-			StudentID:      studentID,
-			QuestionIDs:    questionIDs,
-			Answers:        db.ExamAnswers{},
-			TotalQuestions: &totalQuestions,
-			Status:         ExamStatusInProgress,
-		})
+		examData, err := em.addExam(ctx, txRepo, courseID, studentID, questionIDs)
 		if err != nil {
-			return fmt.Errorf("failed create exam: %w", err)
+			return err
 		}
 
 		examStart = newExamStart(*examData, questionIDs)
@@ -256,40 +233,20 @@ func (em *ExamManager) Submit(ctx context.Context, studentID, examID int) (ExamR
 			status = ExamStatusPassed
 		}
 		finishedAt := time.Now()
-		finalScoreFloat := float64(finalScore)
-
-		updated, err := txRepo.UpdateExam(
+		if err = em.updateSubmittedExam(
 			ctx,
-			newDBExamSubmitUpdate(
-				exam.ExamID,
-				status,
-				correctAnswers,
-				totalQuestions,
-				finalScoreFloat,
-				finishedAt,
-			),
-			db.WithColumns(
-				db.Columns.Exam.Status,
-				db.Columns.Exam.CorrectAnswers,
-				db.Columns.Exam.TotalQuestions,
-				db.Columns.Exam.FinalScore,
-				db.Columns.Exam.FinishedAt,
-			),
-		)
-		if err != nil {
-			return fmt.Errorf("failed update exam: %w", err)
-		}
-		if !updated {
-			return ErrExamNotUpdated
+			txRepo,
+			exam.ExamID,
+			status,
+			correctAnswers,
+			totalQuestions,
+			finalScore,
+			finishedAt,
+		); err != nil {
+			return err
 		}
 
-		examResult = ExamResult{
-			ExamID:         exam.ExamID,
-			Status:         status,
-			FinalScore:     finalScore,
-			CorrectAnswers: correctAnswers,
-			TotalQuestions: totalQuestions,
-		}
+		examResult = newExamResult(exam.ExamID, status, finalScore, correctAnswers, totalQuestions)
 
 		return nil
 	})
@@ -317,6 +274,106 @@ func (em *ExamManager) MyList(ctx context.Context, studentID, page, pageSize int
 	return newExamSummaries(exams), nil
 }
 
+func (em *ExamManager) getAvailableCourse(
+	ctx context.Context,
+	txRepo db.CoursesRepo,
+	courseID int,
+	now time.Time,
+) error {
+	courseData, err := txRepo.OneCourse(ctx, &db.CourseSearch{
+		ID:              &courseID,
+		AvailableFromTo: &now,
+		AvailableToFrom: &now,
+	})
+	if err != nil {
+		return fmt.Errorf("failed get coursepass: %w", err)
+	}
+	if courseData == nil {
+		return ErrCourseNotFound
+	}
+
+	return nil
+}
+
+func (em *ExamManager) getCourseQuestions(
+	ctx context.Context,
+	txRepo db.CoursesRepo,
+	courseID int,
+) ([]db.Question, error) {
+	questions, err := txRepo.QuestionsByFilters(
+		ctx,
+		&db.QuestionSearch{CourseID: &courseID},
+		db.PagerNoLimit,
+		db.WithSort(db.NewSortField(db.Columns.Question.ID, false)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed get questions: %w", err)
+	}
+	if len(questions) == 0 {
+		return nil, ErrNoQuestions
+	}
+
+	return questions, nil
+}
+
+func (em *ExamManager) addExam(
+	ctx context.Context,
+	txRepo db.CoursesRepo,
+	courseID, studentID int,
+	questionIDs []int,
+) (*db.Exam, error) {
+	totalQuestions := len(questionIDs)
+	examData, err := txRepo.AddExam(ctx, &db.Exam{
+		CourseID:       courseID,
+		StudentID:      studentID,
+		QuestionIDs:    questionIDs,
+		Answers:        db.ExamAnswers{},
+		TotalQuestions: &totalQuestions,
+		Status:         ExamStatusInProgress,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed create exam: %w", err)
+	}
+
+	return examData, nil
+}
+
+func (em *ExamManager) updateSubmittedExam(
+	ctx context.Context,
+	txRepo db.CoursesRepo,
+	examID int,
+	status string,
+	correctAnswers, totalQuestions, finalScore int,
+	finishedAt time.Time,
+) error {
+	finalScoreFloat := float64(finalScore)
+	updated, err := txRepo.UpdateExam(
+		ctx,
+		newDBExamSubmitUpdate(
+			examID,
+			status,
+			correctAnswers,
+			totalQuestions,
+			finalScoreFloat,
+			finishedAt,
+		),
+		db.WithColumns(
+			db.Columns.Exam.Status,
+			db.Columns.Exam.CorrectAnswers,
+			db.Columns.Exam.TotalQuestions,
+			db.Columns.Exam.FinalScore,
+			db.Columns.Exam.FinishedAt,
+		),
+	)
+	if err != nil {
+		return fmt.Errorf("failed update exam: %w", err)
+	}
+	if !updated {
+		return ErrExamNotUpdated
+	}
+
+	return nil
+}
 func countCorrectAnswers(questionIDs []int, questions []Question, answers []ExamAnswer) int {
 	questionByID := Questions(questions).IndexByQuestionID()
 	answerByQuestionID := ExamAnswers(answers).IndexByQuestionID()

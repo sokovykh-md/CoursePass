@@ -178,6 +178,16 @@ func newExamSummaries(exams []db.Exam) []ExamSummary {
 	return Map(exams, newExamSummary)
 }
 
+func newExamResult(examID int, status string, finalScore, correctAnswers, totalQuestions int) ExamResult {
+	return ExamResult{
+		ExamID:         examID,
+		Status:         status,
+		FinalScore:     finalScore,
+		CorrectAnswers: correctAnswers,
+		TotalQuestions: totalQuestions,
+	}
+}
+
 func newExamState(exam db.Exam) ExamState {
 	return ExamState{
 		ExamID:      exam.ID,

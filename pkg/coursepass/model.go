@@ -21,6 +21,7 @@ var (
 	ErrAnswerAlreadySaved = errors.New("answer already saved")
 	ErrInvalidOptionIDs   = errors.New("invalid option ids")
 	ErrExamNotUpdated     = errors.New("exam not updated")
+	ExamAllreadyStarted   = errors.New("exam allready started")
 )
 
 const (
