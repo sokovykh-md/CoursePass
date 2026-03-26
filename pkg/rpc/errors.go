@@ -61,6 +61,15 @@ func mapRPCError(err error) error {
 		}
 	case errors.Is(err, coursepass.ErrQuestionNotInExam):
 		return invalidParamsError("questionId", "does not belong to exam")
+	case errors.Is(err, coursepass.ErrInvalidOptionIDs):
+		return invalidParamsError("optionIds", "contains invalid values")
+	case errors.Is(err, coursepass.ErrAnswerAlreadySaved):
+		return invalidParamsError("questionId", "answer already saved")
+	case errors.Is(err, coursepass.ErrExamNotUpdated):
+		return &zenrpc.Error{
+			Code:    zenrpc.InvalidParams,
+			Message: "exam not updated",
+		}
 	case errors.Is(err, coursepass.ErrNoQuestions):
 		return &zenrpc.Error{
 			Code:    zenrpc.InvalidParams,
