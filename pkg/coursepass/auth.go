@@ -13,6 +13,7 @@ import (
 )
 
 type AuthManager struct {
+	dbo  db.DB
 	repo db.CoursesRepo
 	auth AuthConfig
 	embedlog.Logger
@@ -21,10 +22,12 @@ type AuthManager struct {
 const (
 	uxStudentsLoginConstraint = "uq_students_login"
 	uxStudentsEmailConstraint = "uq_students_email"
+	registerLockName          = "student_register"
 )
 
 func NewAuthManager(dbo db.DB, logger embedlog.Logger, authCfg AuthConfig) *AuthManager {
 	return &AuthManager{
+		dbo:    dbo,
 		repo:   db.NewCoursesRepo(dbo),
 		auth:   authCfg,
 		Logger: logger,
@@ -32,24 +35,34 @@ func NewAuthManager(dbo db.DB, logger embedlog.Logger, authCfg AuthConfig) *Auth
 }
 
 func (am *AuthManager) Register(ctx context.Context, login, password, email, firstName, lastName string) (AuthToken, error) {
-	if err := am.ensureLoginAvailable(ctx, login); err != nil {
-		return AuthToken{}, err
-	}
-	if err := am.ensureEmailAvailable(ctx, email); err != nil {
-		return AuthToken{}, err
-	}
-
 	hash, err := passwordHash(password)
 	if err != nil {
 		return AuthToken{}, err
 	}
 
-	student, err := am.addStudent(ctx, login, hash, firstName, lastName, email)
+	var authStudent studentAuth
+	err = am.dbo.RunInLock(ctx, registerLockName, func(tx *pg.Tx) error {
+		txRepo := am.repo.WithTransaction(tx)
+
+		if err = am.ensureLoginAvailable(ctx, txRepo, login); err != nil {
+			return err
+		}
+		if err = am.ensureEmailAvailable(ctx, txRepo, email); err != nil {
+			return err
+		}
+
+		student, addErr := am.addStudent(ctx, txRepo, login, hash, firstName, lastName, email)
+		if addErr != nil {
+			return addErr
+		}
+
+		authStudent = newStudentAuth(*student)
+		return nil
+	})
 	if err != nil {
 		return AuthToken{}, err
 	}
 
-	authStudent := newStudentAuth(*student)
 	return am.newTokenForStudent(authStudent)
 }
 
@@ -80,8 +93,8 @@ func isUniqueConstraintViolation(err error, constraintName string) bool {
 	return errors.As(err, &pgErr) && pgErr.Field('n') == constraintName
 }
 
-func (am *AuthManager) ensureLoginAvailable(ctx context.Context, login string) error {
-	studentData, err := am.repo.OneStudent(ctx, &db.StudentSearch{
+func (am *AuthManager) ensureLoginAvailable(ctx context.Context, repo db.CoursesRepo, login string) error {
+	studentData, err := repo.OneStudent(ctx, &db.StudentSearch{
 		Login: &login,
 	})
 	if err != nil {
@@ -94,8 +107,8 @@ func (am *AuthManager) ensureLoginAvailable(ctx context.Context, login string) e
 	return nil
 }
 
-func (am *AuthManager) ensureEmailAvailable(ctx context.Context, email string) error {
-	studentData, err := am.repo.OneStudent(ctx, &db.StudentSearch{
+func (am *AuthManager) ensureEmailAvailable(ctx context.Context, repo db.CoursesRepo, email string) error {
+	studentData, err := repo.OneStudent(ctx, &db.StudentSearch{
 		Email: &email,
 	})
 	if err != nil {
@@ -108,8 +121,8 @@ func (am *AuthManager) ensureEmailAvailable(ctx context.Context, email string) e
 	return nil
 }
 
-func (am *AuthManager) addStudent(ctx context.Context, login, passwordHash, firstName, lastName, email string) (*db.Student, error) {
-	student, err := am.repo.AddStudent(ctx, newDBStudent(login, passwordHash, firstName, lastName, email))
+func (am *AuthManager) addStudent(ctx context.Context, repo db.CoursesRepo, login, passwordHash, firstName, lastName, email string) (*db.Student, error) {
+	student, err := repo.AddStudent(ctx, newDBStudent(login, passwordHash, firstName, lastName, email))
 	if err != nil {
 		if isUniqueConstraintViolation(err, uxStudentsLoginConstraint) {
 			return nil, ErrLoginExists
