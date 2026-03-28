@@ -31,7 +31,6 @@ func (es *ExamService) Start(ctx context.Context, courseID int) (*ExamStart, err
 
 	studentID, ok := studentIDFromContext(ctx)
 	if !ok || studentID <= 0 {
-		es.Logger.Error(ctx, "exam start failed: no studentID in context")
 		return nil, mapRPCError(coursepass.ErrInvalidToken)
 	}
 
@@ -54,7 +53,6 @@ func (es *ExamService) GetQuestion(ctx context.Context, examID, questionID int) 
 
 	studentID, ok := studentIDFromContext(ctx)
 	if !ok || studentID <= 0 {
-		es.Logger.Error(ctx, "exam question failed: no studentID in context")
 		return nil, mapRPCError(coursepass.ErrInvalidToken)
 	}
 
@@ -80,7 +78,6 @@ func (es *ExamService) Answer(ctx context.Context, examID, questionID int, optio
 
 	studentID, ok := studentIDFromContext(ctx)
 	if !ok || studentID <= 0 {
-		es.Logger.Error(ctx, "exam save failed: no studentID in context")
 		return mapRPCError(coursepass.ErrInvalidToken)
 	}
 
@@ -100,7 +97,6 @@ func (es *ExamService) Submit(ctx context.Context, examID int) (*ExamResult, err
 
 	studentID, ok := studentIDFromContext(ctx)
 	if !ok || studentID <= 0 {
-		es.Logger.Error(ctx, "exam submit failed: no studentID in context")
 		return nil, mapRPCError(coursepass.ErrInvalidToken)
 	}
 
@@ -123,7 +119,6 @@ func (es *ExamService) History(ctx context.Context, page, pageSize int) ([]*Exam
 
 	studentID, ok := studentIDFromContext(ctx)
 	if !ok || studentID <= 0 {
-		es.Logger.Error(ctx, "exam history failed: no studentID in context")
 		return nil, mapRPCError(coursepass.ErrInvalidToken)
 	}
 

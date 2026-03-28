@@ -59,8 +59,7 @@ func (em *ExamManager) Start(ctx context.Context, studentID, courseID int) (Exam
 			return err
 		}
 
-		courseQuestions := newQuestions(questions, em.mediaWebPath)
-		questionIDs := Questions(courseQuestions).QuestionIDs()
+		questionIDs := Questions(questions).QuestionIDs()
 
 		examData, err := em.addExam(ctx, txRepo, courseID, studentID, questionIDs)
 		if err != nil {
@@ -342,7 +341,7 @@ func (em *ExamManager) getAvailableCourse(ctx context.Context, txRepo db.Courses
 	return nil
 }
 
-func (em *ExamManager) getCourseQuestions(ctx context.Context, txRepo db.CoursesRepo, courseID int) ([]db.Question, error) {
+func (em *ExamManager) getCourseQuestions(ctx context.Context, txRepo db.CoursesRepo, courseID int) ([]Question, error) {
 	questions, err := txRepo.QuestionsByFilters(
 		ctx,
 		&db.QuestionSearch{CourseID: &courseID},
@@ -356,7 +355,7 @@ func (em *ExamManager) getCourseQuestions(ctx context.Context, txRepo db.Courses
 		return nil, ErrNoQuestions
 	}
 
-	return questions, nil
+	return newQuestions(questions, em.mediaWebPath), nil
 }
 
 func (em *ExamManager) addExam(ctx context.Context, txRepo db.CoursesRepo, courseID, studentID int, questionIDs []int) (*db.Exam, error) {
