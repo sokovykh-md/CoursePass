@@ -32,7 +32,6 @@ func (cs *CoursesService) Me(ctx context.Context) (*Student, error) {
 
 	student, err := cs.courseManager.Me(ctx, studentID)
 	if err != nil {
-		cs.Logger.Error(ctx, "course me failed", "err", err)
 		return nil, mapRPCError(err)
 	}
 
@@ -49,7 +48,6 @@ func (cs *CoursesService) List(ctx context.Context, page, pageSize int) ([]*Cour
 
 	courses, err := cs.courseManager.Summary(ctx, page, pageSize)
 	if err != nil {
-		cs.Logger.Error(ctx, "course list failed", "err", err)
 		return nil, mapRPCError(err)
 	}
 
@@ -63,7 +61,6 @@ func (cs *CoursesService) ByID(ctx context.Context, courseID int) (*Course, erro
 
 	courseObj, err := cs.courseManager.ByID(ctx, courseID)
 	if err != nil {
-		cs.Logger.Error(ctx, "course by id failed", "err", err)
 		return nil, mapRPCError(err)
 	}
 
