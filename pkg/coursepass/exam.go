@@ -132,7 +132,7 @@ func (em *ExamManager) SaveAnswer(ctx context.Context, studentID, examID, questi
 
 		exam.Answers = append(exam.Answers, ExamAnswer{
 			QuestionID: questionID,
-			OptionIDs:  slicesClone(optionIDs),
+			OptionIDs:  slices.Clone(optionIDs),
 		})
 		return em.updateExamAnswers(ctx, txRepo, exam.ExamID, exam.Answers)
 	})

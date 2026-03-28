@@ -24,49 +24,49 @@ func NewCoursesService(dbc db.DB, logger embedlog.Logger) *CoursesService {
 	}
 }
 
-func (cs *CoursesService) Me(ctx context.Context) (MeResponse, error) {
+func (cs *CoursesService) Me(ctx context.Context) (*Student, error) {
 	studentID, ok := studentIDFromContext(ctx)
 	if !ok || studentID <= 0 {
 		cs.Logger.Error(ctx, "course me failed: no studentID in context")
-		return MeResponse{}, mapRPCError(coursepass.ErrInvalidToken)
+		return nil, mapRPCError(coursepass.ErrInvalidToken)
 	}
 
 	student, err := cs.courseManager.Me(ctx, studentID)
 	if err != nil {
 		cs.Logger.Error(ctx, "course me failed", "err", err)
-		return MeResponse{}, mapRPCError(err)
+		return nil, mapRPCError(err)
 	}
 
-	return newMeResponse(student), nil
+	return newStudent(student), nil
 }
 
-func (cs *CoursesService) List(ctx context.Context, req ListRequest) (ListResponse, error) {
-	if req.Page < 1 {
-		req.Page = 1
+func (cs *CoursesService) List(ctx context.Context, page, pageSize int) ([]*CourseSummary, error) {
+	if page < 1 {
+		page = 1
 	}
-	if req.PageSize < 1 {
-		req.PageSize = 10
+	if pageSize < 1 {
+		pageSize = 10
 	}
 
-	courses, err := cs.courseManager.Summary(ctx, req.Page, req.PageSize)
+	courses, err := cs.courseManager.Summary(ctx, page, pageSize)
 	if err != nil {
 		cs.Logger.Error(ctx, "course list failed", "err", err)
-		return ListResponse{}, mapRPCError(err)
+		return nil, mapRPCError(err)
 	}
 
-	return newCoursesSummaryResponse(courses), nil
+	return newCourseSummaries(courses), nil
 }
 
-func (cs *CoursesService) ByID(ctx context.Context, req ByIDRequest) (ByIDResponse, error) {
-	if req.CourseID < 1 {
-		return ByIDResponse{}, invalidParamsError("courseId", "must be greater than 0")
+func (cs *CoursesService) ByID(ctx context.Context, courseID int) (*Course, error) {
+	if courseID < 1 {
+		return nil, invalidParamsError("courseId", "must be greater than 0")
 	}
 
-	courseObj, err := cs.courseManager.ByID(ctx, req.CourseID)
+	courseObj, err := cs.courseManager.ByID(ctx, courseID)
 	if err != nil {
 		cs.Logger.Error(ctx, "course by id failed", "err", err)
-		return ByIDResponse{}, mapRPCError(err)
+		return nil, mapRPCError(err)
 	}
 
-	return newCourseByIDResponse(courseObj), nil
+	return newCourse(courseObj), nil
 }

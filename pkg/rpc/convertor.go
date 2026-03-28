@@ -4,24 +4,16 @@ import (
 	"courses/pkg/coursepass"
 )
 
-func newRegisterResponse(token coursepass.AuthToken) RegisterResponse {
-	return RegisterResponse{
+func newToken(token coursepass.AuthToken) *Token {
+	return &Token{
 		AccessToken: token.AccessToken,
 		ExpiresIn:   token.ExpiresIn,
 		TokenType:   token.TokenType,
 	}
 }
 
-func newLoginResponse(token coursepass.AuthToken) LoginResponse {
-	return LoginResponse{
-		AccessToken: token.AccessToken,
-		ExpiresIn:   token.ExpiresIn,
-		TokenType:   token.TokenType,
-	}
-}
-
-func newMeResponse(student *coursepass.Student) MeResponse {
-	return MeResponse{
+func newStudent(student *coursepass.Student) *Student {
+	return &Student{
 		StudentID: student.StudentID,
 		Login:     student.Login,
 		Email:     student.Email,
@@ -30,8 +22,8 @@ func newMeResponse(student *coursepass.Student) MeResponse {
 	}
 }
 
-func newCourse(c coursepass.Course) Course {
-	return Course{
+func newCourse(c coursepass.Course) *Course {
+	return &Course{
 		CourseID:      c.CourseID,
 		Title:         c.Title,
 		Description:   c.Description,
@@ -42,14 +34,8 @@ func newCourse(c coursepass.Course) Course {
 	}
 }
 
-func newCourseByIDResponse(course coursepass.Course) ByIDResponse {
-	return ByIDResponse{
-		Course: newCourse(course),
-	}
-}
-
-func newCourseSummary(course coursepass.CourseSummary) CourseSummary {
-	return CourseSummary{
+func newCourseSummary(course coursepass.CourseSummary) *CourseSummary {
+	return &CourseSummary{
 		CourseID:      course.CourseID,
 		Title:         course.Title,
 		TimeLimit:     course.TimeLimit,
@@ -59,15 +45,8 @@ func newCourseSummary(course coursepass.CourseSummary) CourseSummary {
 	}
 }
 
-func newCoursesSummaryResponse(courses []coursepass.CourseSummary) ListResponse {
-	result := newCourseSummaries(courses)
-	return ListResponse{
-		Courses: result,
-	}
-}
-
-func newExamStartResponse(start coursepass.ExamStart) ExamStartResponse {
-	return ExamStartResponse{
+func newExamStart(start coursepass.ExamStart) *ExamStart {
+	return &ExamStart{
 		ExamID:      start.ExamID,
 		QuestionIDs: start.QuestionIDs,
 		StartedAt:   start.StartedAt,
@@ -75,8 +54,8 @@ func newExamStartResponse(start coursepass.ExamStart) ExamStartResponse {
 	}
 }
 
-func newQuestionResponse(question coursepass.Question) Question {
-	return Question{
+func newQuestion(question coursepass.Question) *Question {
+	return &Question{
 		QuestionID:   question.QuestionID,
 		QuestionText: question.QuestionText,
 		QuestionType: question.QuestionType,
@@ -85,15 +64,15 @@ func newQuestionResponse(question coursepass.Question) Question {
 	}
 }
 
-func NewQuestionOption(option coursepass.QuestionOption) QuestionOption {
-	return QuestionOption{
+func NewQuestionOption(option coursepass.QuestionOption) *QuestionOption {
+	return &QuestionOption{
 		OptionID:   option.OptionID,
 		OptionText: option.OptionText,
 	}
 }
 
-func newExamResultResponse(result coursepass.ExamResult) ExamResult {
-	return ExamResult{
+func newExamResult(result coursepass.ExamResult) *ExamResult {
+	return &ExamResult{
 		ExamID:         result.ExamID,
 		Status:         result.Status,
 		FinalScore:     result.FinalScore,
@@ -102,18 +81,12 @@ func newExamResultResponse(result coursepass.ExamResult) ExamResult {
 	}
 }
 
-func newExamSummary(summary coursepass.ExamSummary) ExamSummary {
-	return ExamSummary{
+func newExamSummary(summary coursepass.ExamSummary) *ExamSummary {
+	return &ExamSummary{
 		ExamID:     summary.ExamID,
 		CourseID:   summary.CourseID,
 		Status:     summary.Status,
 		FinalScore: summary.FinalScore,
 		FinishedAt: summary.FinishedAt,
-	}
-}
-
-func newExamHistoryResponse(exams []coursepass.ExamSummary) ExamHistoryResponse {
-	return ExamHistoryResponse{
-		Exams: newExamSummaries(exams),
 	}
 }

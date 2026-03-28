@@ -25,100 +25,93 @@ func NewAuthService(dbc db.DB, logger embedlog.Logger, authCfg coursepass.AuthCo
 	}
 }
 
-func (as *AuthService) Register(ctx context.Context, req RegisterRequest) (RegisterResponse, error) {
-	if err := validateRegisterRequest(req); err != nil {
+func (as *AuthService) Register(ctx context.Context, login, password, email, firstName, lastName string) (*Token, error) {
+	if err := validateRegisterRequest(login, password, email, firstName, lastName); err != nil {
 		as.Logger.Error(ctx, "auth register invalid params", "err", err)
-		return RegisterResponse{}, err
+		return nil, err
 	}
 
-	token, err := as.authManager.Register(
-		ctx,
-		req.Login,
-		req.Password,
-		req.Email,
-		req.FirstName,
-		req.LastName,
-	)
+	token, err := as.authManager.Register(ctx, login, password, email, firstName, lastName)
 	if err != nil {
 		as.Logger.Error(ctx, "auth register failed", "err", err)
-		return RegisterResponse{}, mapRPCError(err)
+		return nil, mapRPCError(err)
 	}
 
-	return newRegisterResponse(token), nil
+	return newToken(token), nil
 }
 
-func (as *AuthService) Login(ctx context.Context, req LoginRequest) (LoginResponse, error) {
-	if err := validateLoginRequest(req); err != nil {
+func (as *AuthService) Login(ctx context.Context, login, password string) (*Token, error) {
+	if err := validateLoginRequest(login, password); err != nil {
 		as.Logger.Error(ctx, "auth login invalid params", "err", err)
-		return LoginResponse{}, err
+		return nil, err
 	}
 
-	token, err := as.authManager.Login(ctx, req.Login, req.Password)
+	token, err := as.authManager.Login(ctx, login, password)
 	if err != nil {
 		as.Logger.Error(ctx, "auth login failed", "err", err)
-		return LoginResponse{}, mapRPCError(err)
+		return nil, mapRPCError(err)
 	}
 
-	return newLoginResponse(token), nil
+	return newToken(token), nil
 }
 
-func validateRegisterRequest(req RegisterRequest) error {
-	if req.Login == "" {
+func validateRegisterRequest(login, password, email, firstName, lastName string) error {
+	if login == "" {
 		return invalidParamsError("login", "is required")
 	}
-	if len([]rune(req.Login)) > 255 {
+	if len([]rune(login)) > 255 {
 		return invalidParamsError("login", "max length is 255")
 	}
 
-	if req.Password == "" {
+	if password == "" {
 		return invalidParamsError("password", "is required")
 	}
-	if len([]rune(req.Password)) < 6 {
+	if len([]rune(password)) < 6 {
 		return invalidParamsError("password", "min length is 6")
 	}
-	if len([]rune(req.Password)) > 255 {
+	if len([]rune(password)) > 255 {
 		return invalidParamsError("password", "max length is 255")
 	}
 
-	if req.Email == "" {
+	if email == "" {
 		return invalidParamsError("email", "is required")
 	}
-	if len([]rune(req.Email)) > 255 {
+	if len([]rune(email)) > 255 {
 		return invalidParamsError("email", "max length is 255")
 	}
-	if _, err := mail.ParseAddress(req.Email); err != nil {
+	if _, err := mail.ParseAddress(email); err != nil {
 		return invalidParamsError("email", "invalid format")
 	}
 
-	if req.FirstName == "" {
+	if firstName == "" {
 		return invalidParamsError("firstName", "is required")
 	}
-	if len([]rune(req.FirstName)) > 255 {
+	if len([]rune(firstName)) > 255 {
 		return invalidParamsError("firstName", "max length is 255")
 	}
 
-	if req.LastName == "" {
+	if lastName == "" {
 		return invalidParamsError("lastName", "is required")
 	}
-	if len([]rune(req.LastName)) > 255 {
+	if len([]rune(lastName)) > 255 {
 		return invalidParamsError("lastName", "max length is 255")
 	}
 
 	return nil
 }
 
-func validateLoginRequest(req LoginRequest) error {
-	if req.Login == "" {
+func validateLoginRequest(login, password string) error {
+	if login == "" {
 		return invalidParamsError("login", "is required")
 	}
-	if len([]rune(req.Login)) > 255 {
+	if len([]rune(login)) > 255 {
 		return invalidParamsError("login", "max length is 255")
 	}
 
-	if req.Password == "" {
+	if password == "" {
 		return invalidParamsError("password", "is required")
 	}
-	if len([]rune(req.Password)) > 255 {
+	if len([]rune(password)) > 255 {
 		return invalidParamsError("password", "max length is 255")
 	}
 

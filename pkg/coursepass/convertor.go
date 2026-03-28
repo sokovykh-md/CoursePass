@@ -2,6 +2,7 @@ package coursepass
 
 import (
 	"path"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -193,7 +194,7 @@ func newExamState(exam db.Exam) ExamState {
 		ExamID:      exam.ID,
 		CourseID:    exam.CourseID,
 		Status:      exam.Status,
-		QuestionIDs: slicesClone(exam.QuestionIDs),
+		QuestionIDs: slices.Clone(exam.QuestionIDs),
 		Answers:     newExamStateAnswers(exam.Answers),
 	}
 }
@@ -203,7 +204,7 @@ func newExamStateAnswers(answers db.ExamAnswers) []ExamAnswer {
 	for i := range answers {
 		result[i] = ExamAnswer{
 			QuestionID: answers[i].QuestionID,
-			OptionIDs:  slicesClone(answers[i].OptionIDs),
+			OptionIDs:  slices.Clone(answers[i].OptionIDs),
 		}
 	}
 
@@ -215,7 +216,7 @@ func newDBExamStateAnswers(answers []ExamAnswer) db.ExamAnswers {
 	for i := range answers {
 		result[i] = db.ExamAnswer{
 			QuestionID: answers[i].QuestionID,
-			OptionIDs:  slicesClone(answers[i].OptionIDs),
+			OptionIDs:  slices.Clone(answers[i].OptionIDs),
 		}
 	}
 
@@ -238,15 +239,4 @@ func newDBExamSubmitUpdate(examID int, status string, correctAnswers, totalQuest
 		FinalScore:     &finalScore,
 		FinishedAt:     &finishedAt,
 	}
-}
-
-func slicesClone[T any](in []T) []T {
-	if in == nil {
-		return nil
-	}
-
-	out := make([]T, len(in))
-	copy(out, in)
-
-	return out
 }
