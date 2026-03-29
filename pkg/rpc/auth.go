@@ -34,7 +34,7 @@ func (as *AuthService) Register(ctx context.Context, login, password, email, fir
 	token, err := as.authManager.Register(ctx, login, password, email, firstName, lastName)
 	if err != nil {
 		as.Logger.Error(ctx, "auth register failed", "err", err)
-		return nil, mapRPCError(err)
+		return nil, mapDomainError(err)
 	}
 
 	return newToken(token), nil
@@ -49,7 +49,7 @@ func (as *AuthService) Login(ctx context.Context, login, password string) (*Toke
 	token, err := as.authManager.Login(ctx, login, password)
 	if err != nil {
 		as.Logger.Error(ctx, "auth login failed", "err", err)
-		return nil, mapRPCError(err)
+		return nil, mapDomainError(err)
 	}
 
 	return newToken(token), nil
@@ -57,44 +57,44 @@ func (as *AuthService) Login(ctx context.Context, login, password string) (*Toke
 
 func validateRegisterRequest(login, password, email, firstName, lastName string) error {
 	if login == "" {
-		return invalidParamsError("login", "is required")
+		return newInvalidParamsError("login", "is required")
 	}
 	if len([]rune(login)) > 255 {
-		return invalidParamsError("login", "max length is 255")
+		return newInvalidParamsError("login", "max length is 255")
 	}
 
 	if password == "" {
-		return invalidParamsError("password", "is required")
+		return newInvalidParamsError("password", "is required")
 	}
 	if len([]rune(password)) < 6 {
-		return invalidParamsError("password", "min length is 6")
+		return newInvalidParamsError("password", "min length is 6")
 	}
 	if len([]rune(password)) > 255 {
-		return invalidParamsError("password", "max length is 255")
+		return newInvalidParamsError("password", "max length is 255")
 	}
 
 	if email == "" {
-		return invalidParamsError("email", "is required")
+		return newInvalidParamsError("email", "is required")
 	}
 	if len([]rune(email)) > 255 {
-		return invalidParamsError("email", "max length is 255")
+		return newInvalidParamsError("email", "max length is 255")
 	}
 	if _, err := mail.ParseAddress(email); err != nil {
-		return invalidParamsError("email", "invalid format")
+		return newInvalidParamsError("email", "invalid format")
 	}
 
 	if firstName == "" {
-		return invalidParamsError("firstName", "is required")
+		return newInvalidParamsError("firstName", "is required")
 	}
 	if len([]rune(firstName)) > 255 {
-		return invalidParamsError("firstName", "max length is 255")
+		return newInvalidParamsError("firstName", "max length is 255")
 	}
 
 	if lastName == "" {
-		return invalidParamsError("lastName", "is required")
+		return newInvalidParamsError("lastName", "is required")
 	}
 	if len([]rune(lastName)) > 255 {
-		return invalidParamsError("lastName", "max length is 255")
+		return newInvalidParamsError("lastName", "max length is 255")
 	}
 
 	return nil
@@ -102,17 +102,17 @@ func validateRegisterRequest(login, password, email, firstName, lastName string)
 
 func validateLoginRequest(login, password string) error {
 	if login == "" {
-		return invalidParamsError("login", "is required")
+		return newInvalidParamsError("login", "is required")
 	}
 	if len([]rune(login)) > 255 {
-		return invalidParamsError("login", "max length is 255")
+		return newInvalidParamsError("login", "max length is 255")
 	}
 
 	if password == "" {
-		return invalidParamsError("password", "is required")
+		return newInvalidParamsError("password", "is required")
 	}
 	if len([]rune(password)) > 255 {
-		return invalidParamsError("password", "max length is 255")
+		return newInvalidParamsError("password", "max length is 255")
 	}
 
 	return nil

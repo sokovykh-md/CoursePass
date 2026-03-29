@@ -14,6 +14,18 @@ import (
 var (
 	ErrNotImplemented = zenrpc.NewStringError(http.StatusInternalServerError, "not implemented")
 	ErrInternal       = zenrpc.NewStringError(http.StatusInternalServerError, "internal error")
+	ErrNotFound       = zenrpc.NewStringError(http.StatusNotFound, "not found")
+
+	ErrInvalidParams      = zenrpc.NewStringError(zenrpc.InvalidParams, "invalid params")
+	ErrUnauthorized       = zenrpc.NewStringError(http.StatusUnauthorized, "unauthorized")
+	ErrInvalidToken       = zenrpc.NewStringError(http.StatusUnauthorized, "invalid token")
+	ErrInvalidCredentials = zenrpc.NewStringError(http.StatusUnauthorized, "invalid credentials")
+
+	ErrConflict           = zenrpc.NewStringError(http.StatusConflict, "conflict")
+	ErrExamAlreadyStarted = zenrpc.NewStringError(http.StatusConflict, "exam already started")
+	ErrAnswerAlreadySaved = zenrpc.NewStringError(http.StatusConflict, "answer already saved")
+	ErrExamNotInProgress  = zenrpc.NewStringError(http.StatusConflict, "exam is not in progress")
+	ErrQuestionNotInExam  = zenrpc.NewStringError(http.StatusConflict, "question does not belong to exam")
 )
 
 const (
@@ -63,7 +75,17 @@ func New(dbo db.DB, logger embedlog.Logger, authCfg coursepass.AuthConfig, isDev
 	return rpc
 }
 
-//nolint:unused
 func newInternalError(err error) *zenrpc.Error {
 	return zenrpc.NewError(http.StatusInternalServerError, err)
+}
+
+func newInvalidParamsError(field, reason string) *zenrpc.Error {
+	return &zenrpc.Error{
+		Code:    ErrInvalidParams.Code,
+		Message: ErrInvalidParams.Message,
+		Data: map[string]any{
+			"field":  field,
+			"reason": reason,
+		},
+	}
 }

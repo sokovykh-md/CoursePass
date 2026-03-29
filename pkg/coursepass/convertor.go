@@ -23,14 +23,20 @@ func newDBStudent(login, passwordHash, firstName, lastName, email string) *db.St
 	}
 }
 
-func newStudent(student db.Student) Student {
-	return Student{
-		StudentID: student.ID,
-		Login:     student.Login,
-		Email:     student.Email,
-		FirstName: student.FirstName,
-		LastName:  student.LastName,
+func newStudent(student *db.Student) *Student {
+	if student == nil {
+		return nil
 	}
+	s := Student(*student)
+	return &s
+}
+
+func newCourses(courses []db.Course) []Course {
+	result := make([]Course, len(courses))
+	for i := range courses {
+		result[i] = Course(courses[i])
+	}
+	return result
 }
 
 func newStudentAuth(student db.Student) studentAuth {
@@ -65,31 +71,12 @@ func newTokenClaims(studentID int, login string, iat, exp int64) tokenClaims {
 	}
 }
 
-func newCourseSummary(course db.Course) CourseSummary {
-	return CourseSummary{
-		CourseID:      course.ID,
-		Title:         course.Title,
-		TimeLimit:     course.TimeLimitMinutes,
-		AvailableType: course.AvailabilityType,
-		AvailableFrom: formatTimePtr(course.AvailableFrom),
-		AvailableTo:   formatTimePtr(course.AvailableTo),
+func newCourse(course *db.Course) *Course {
+	if course == nil {
+		return nil
 	}
-}
-
-func newCourseSummaries(courses []db.Course) []CourseSummary {
-	return Map(courses, newCourseSummary)
-}
-
-func newCourse(course db.Course) Course {
-	return Course{
-		CourseID:      course.ID,
-		Title:         course.Title,
-		Description:   course.Description,
-		TimeLimit:     course.TimeLimitMinutes,
-		AvailableType: course.AvailabilityType,
-		AvailableFrom: formatTimePtr(course.AvailableFrom),
-		AvailableTo:   formatTimePtr(course.AvailableTo),
-	}
+	c := Course(*course)
+	return &c
 }
 
 func formatTimePtr(v *time.Time) *string {

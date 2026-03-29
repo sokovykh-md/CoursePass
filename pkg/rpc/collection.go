@@ -1,7 +1,7 @@
 package rpc
 
 //go:generate colgen -imports courses/pkg/coursepass
-//colgen:CourseSummary:map(coursepass.CourseSummary)
+//colgen:CourseSummary:map(coursepass.Course)
 //colgen:ExamSummary:map(coursepass.ExamSummary)
 //colgen:QuestionOption:Map(coursepass.QuestionOption)
 

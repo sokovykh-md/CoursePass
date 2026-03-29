@@ -5,9 +5,7 @@ import (
 	"courses/pkg/coursepass"
 )
 
-func newCourseSummaries(in []coursepass.CourseSummary) []*CourseSummary {
-	return Map(in, newCourseSummary)
-}
+func newCourseSummaries(in []coursepass.Course) []CourseSummary { return Map(in, newCourseSummary) }
 
 func newExamSummaries(in []coursepass.ExamSummary) []*ExamSummary { return Map(in, newExamSummary) }
 

@@ -22,36 +22,19 @@ func NewCourseManager(dbo db.DB, logger embedlog.Logger) *CourseManager {
 	}
 }
 
-func (cm *CourseManager) Summary(ctx context.Context, page, pageSize int) ([]CourseSummary, error) {
-	currentTime := time.Now()
-	courses, err := cm.availableCourses(ctx, currentTime, page, pageSize)
-	if err != nil {
-		return nil, err
-	}
-
-	return newCourseSummaries(courses), nil
+func (cm *CourseManager) List(ctx context.Context, page, pageSize int) ([]Course, error) {
+	return cm.availableCourses(ctx, time.Now(), page, pageSize)
 }
 
-func (cm *CourseManager) ByID(ctx context.Context, courseID int) (Course, error) {
-	courseData, err := cm.courseByID(ctx, courseID)
-	if err != nil {
-		return Course{}, err
-	}
-
-	return newCourse(*courseData), nil
+func (cm *CourseManager) ByID(ctx context.Context, courseID int) (*Course, error) {
+	return cm.courseByID(ctx, courseID)
 }
 
 func (cm *CourseManager) Me(ctx context.Context, studentID int) (*Student, error) {
-	studentData, err := cm.studentByID(ctx, studentID)
-	if err != nil {
-		return nil, err
-	}
-
-	result := newStudent(*studentData)
-	return &result, nil
+	return cm.studentByID(ctx, studentID)
 }
 
-func (cm *CourseManager) availableCourses(ctx context.Context, currentTime time.Time, page, pageSize int) ([]db.Course, error) {
+func (cm *CourseManager) availableCourses(ctx context.Context, currentTime time.Time, page, pageSize int) ([]Course, error) {
 	courses, err := cm.repo.CoursesByFilters(ctx, &db.CourseSearch{
 		AvailableFromTo: &currentTime,
 		AvailableToFrom: &currentTime,
@@ -63,10 +46,10 @@ func (cm *CourseManager) availableCourses(ctx context.Context, currentTime time.
 		return nil, fmt.Errorf("failed get courses: %w", err)
 	}
 
-	return courses, nil
+	return newCourses(courses), nil
 }
 
-func (cm *CourseManager) courseByID(ctx context.Context, courseID int) (*db.Course, error) {
+func (cm *CourseManager) courseByID(ctx context.Context, courseID int) (*Course, error) {
 	courseData, err := cm.repo.OneCourse(ctx, &db.CourseSearch{
 		ID: &courseID,
 	})
@@ -77,10 +60,10 @@ func (cm *CourseManager) courseByID(ctx context.Context, courseID int) (*db.Cour
 		return nil, ErrCourseNotFound
 	}
 
-	return courseData, nil
+	return newCourse(courseData), nil
 }
 
-func (cm *CourseManager) studentByID(ctx context.Context, studentID int) (*db.Student, error) {
+func (cm *CourseManager) studentByID(ctx context.Context, studentID int) (*Student, error) {
 	studentData, err := cm.repo.OneStudent(ctx, &db.StudentSearch{
 		ID: &studentID,
 	})
@@ -91,5 +74,5 @@ func (cm *CourseManager) studentByID(ctx context.Context, studentID int) (*db.St
 		return nil, ErrStudentNotFound
 	}
 
-	return studentData, nil
+	return newStudent(studentData), nil
 }

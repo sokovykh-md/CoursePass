@@ -27,18 +27,20 @@ func NewCoursesService(dbc db.DB, logger embedlog.Logger) *CoursesService {
 func (cs *CoursesService) Me(ctx context.Context) (*Student, error) {
 	studentID, ok := studentIDFromContext(ctx)
 	if !ok || studentID <= 0 {
-		return nil, mapRPCError(coursepass.ErrInvalidToken)
+		return nil, ErrInvalidToken
 	}
 
 	student, err := cs.courseManager.Me(ctx, studentID)
-	if err != nil {
-		return nil, mapRPCError(err)
+	if student == nil {
+		return nil, ErrNotFound
+	} else if err != nil {
+		return nil, newInternalError(err)
 	}
 
 	return newStudent(student), nil
 }
 
-func (cs *CoursesService) List(ctx context.Context, page, pageSize int) ([]*CourseSummary, error) {
+func (cs *CoursesService) List(ctx context.Context, page, pageSize int) ([]CourseSummary, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -46,9 +48,9 @@ func (cs *CoursesService) List(ctx context.Context, page, pageSize int) ([]*Cour
 		pageSize = 10
 	}
 
-	courses, err := cs.courseManager.Summary(ctx, page, pageSize)
+	courses, err := cs.courseManager.List(ctx, page, pageSize)
 	if err != nil {
-		return nil, mapRPCError(err)
+		return nil, newInternalError(err)
 	}
 
 	return newCourseSummaries(courses), nil
@@ -56,13 +58,14 @@ func (cs *CoursesService) List(ctx context.Context, page, pageSize int) ([]*Cour
 
 func (cs *CoursesService) ByID(ctx context.Context, courseID int) (*Course, error) {
 	if courseID < 1 {
-		return nil, invalidParamsError("courseId", "must be greater than 0")
+		return nil, newInvalidParamsError("courseId", "must be greater than 0")
+	}
+	course, err := cs.courseManager.ByID(ctx, courseID)
+	if course == nil {
+		return nil, ErrNotFound
+	} else if err != nil {
+		return nil, newInternalError(err)
 	}
 
-	courseObj, err := cs.courseManager.ByID(ctx, courseID)
-	if err != nil {
-		return nil, mapRPCError(err)
-	}
-
-	return newCourse(courseObj), nil
+	return newCourse(course), nil
 }

@@ -1,8 +1,20 @@
 package rpc
 
 import (
+	"time"
+
 	"courses/pkg/coursepass"
 )
+
+const dateTimeLayout = "2006-01-02 15:04:05"
+
+func formatTimePtr(v *time.Time) *string {
+	if v == nil {
+		return nil
+	}
+	s := v.Format(dateTimeLayout)
+	return &s
+}
 
 func newToken(token coursepass.AuthToken) *Token {
 	return &Token{
@@ -14,7 +26,7 @@ func newToken(token coursepass.AuthToken) *Token {
 
 func newStudent(student *coursepass.Student) *Student {
 	return &Student{
-		StudentID: student.StudentID,
+		StudentID: student.ID,
 		Login:     student.Login,
 		Email:     student.Email,
 		FirstName: student.FirstName,
@@ -22,26 +34,26 @@ func newStudent(student *coursepass.Student) *Student {
 	}
 }
 
-func newCourse(c coursepass.Course) *Course {
+func newCourse(course *coursepass.Course) *Course {
 	return &Course{
-		CourseID:      c.CourseID,
-		Title:         c.Title,
-		Description:   c.Description,
-		TimeLimit:     c.TimeLimit,
-		AvailableType: c.AvailableType,
-		AvailableFrom: c.AvailableFrom,
-		AvailableTo:   c.AvailableTo,
+		CourseID:      course.ID,
+		Title:         course.Title,
+		Description:   course.Description,
+		TimeLimit:     course.TimeLimitMinutes,
+		AvailableType: course.AvailabilityType,
+		AvailableFrom: formatTimePtr(course.AvailableFrom),
+		AvailableTo:   formatTimePtr(course.AvailableTo),
 	}
 }
 
-func newCourseSummary(course coursepass.CourseSummary) *CourseSummary {
-	return &CourseSummary{
-		CourseID:      course.CourseID,
+func newCourseSummary(course coursepass.Course) CourseSummary {
+	return CourseSummary{
+		CourseID:      course.ID,
 		Title:         course.Title,
-		TimeLimit:     course.TimeLimit,
-		AvailableType: course.AvailableType,
-		AvailableFrom: course.AvailableFrom,
-		AvailableTo:   course.AvailableTo,
+		TimeLimit:     course.TimeLimitMinutes,
+		AvailableType: course.AvailabilityType,
+		AvailableFrom: formatTimePtr(course.AvailableFrom),
+		AvailableTo:   formatTimePtr(course.AvailableTo),
 	}
 }
 

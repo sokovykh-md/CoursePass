@@ -1,6 +1,7 @@
 package coursepass
 
 import (
+	"courses/pkg/db"
 	"errors"
 	"fmt"
 )
@@ -37,13 +38,7 @@ type AuthToken struct {
 	TokenType   string
 }
 
-type Student struct {
-	StudentID int
-	Login     string
-	Email     string
-	FirstName string
-	LastName  string
-}
+type Student db.Student
 
 type studentAuth struct {
 	StudentID    int
@@ -81,24 +76,7 @@ type tokenClaims struct {
 	Iat   int64
 }
 
-type CourseSummary struct {
-	CourseID      int
-	Title         string
-	TimeLimit     *int
-	AvailableType string
-	AvailableFrom *string
-	AvailableTo   *string
-}
-
-type Course struct {
-	CourseID      int
-	Title         string
-	Description   string
-	TimeLimit     *int
-	AvailableType string
-	AvailableFrom *string
-	AvailableTo   *string
-}
+type Course db.Course
 
 type ExamQuestionRequest struct {
 	ExamID     int

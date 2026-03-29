@@ -34,13 +34,23 @@ func authMiddleware(authCfg coursepass.AuthConfig, logger embedlog.Logger) zenrp
 			token, err := bearerTokenFromContext(ctx)
 			if err != nil {
 				logger.Error(ctx, "auth middleware: invalid token", "err", err)
-				return zenrpc.NewResponseError(zenrpc.IDFromContext(ctx), errInvalidToken, "invalid token", nil)
+				return zenrpc.NewResponseError(
+					zenrpc.IDFromContext(ctx),
+					ErrInvalidToken.Code,
+					ErrInvalidToken.Message,
+					ErrInvalidToken.Data,
+				)
 			}
 
 			studentID, err := coursepass.ValidateJWT(authCfg, token)
 			if err != nil {
 				logger.Error(ctx, "auth middleware: token validation failed", "err", err)
-				return zenrpc.NewResponseError(zenrpc.IDFromContext(ctx), errInvalidToken, "invalid token", nil)
+				return zenrpc.NewResponseError(
+					zenrpc.IDFromContext(ctx),
+					ErrInvalidToken.Code,
+					ErrInvalidToken.Message,
+					ErrInvalidToken.Data,
+				)
 			}
 
 			return h(context.WithValue(ctx, studentKey, studentID), method, params)
