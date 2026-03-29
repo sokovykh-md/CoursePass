@@ -18,9 +18,10 @@ import (
 )
 
 type AuthManager struct {
-	dbo  db.DB
-	repo db.CoursesRepo
-	auth AuthConfig
+	dbo            db.DB
+	repo           db.CoursesRepo
+	jwtSecretValue string
+	jwtTTLSeconds  int
 	embedlog.Logger
 }
 
@@ -30,12 +31,13 @@ const (
 	registerLockName          = "student_register"
 )
 
-func NewAuthManager(dbo db.DB, logger embedlog.Logger, authCfg AuthConfig) *AuthManager {
+func NewAuthManager(dbo db.DB, logger embedlog.Logger, jwtSecretValue string, jwtTTLSeconds int) *AuthManager {
 	return &AuthManager{
-		dbo:    dbo,
-		repo:   db.NewCoursesRepo(dbo),
-		auth:   authCfg,
-		Logger: logger,
+		dbo:            dbo,
+		repo:           db.NewCoursesRepo(dbo),
+		jwtSecretValue: jwtSecretValue,
+		jwtTTLSeconds:  jwtTTLSeconds,
+		Logger:         logger,
 	}
 }
 
@@ -175,7 +177,7 @@ func (am *AuthManager) newTokenForStudent(student *Student) (*AuthToken, error) 
 		return nil, ErrInvalidCredentials
 	}
 
-	token, expiresIn, err := am.generateJWT(am.auth.JWTSecret, am.auth.JWTTTLSeconds, student.ID, student.Login)
+	token, expiresIn, err := am.generateJWT(am.jwtSecretValue, am.jwtTTLSeconds, student.ID, student.Login)
 	if err != nil {
 		return nil, fmt.Errorf("failed create JWT: %w", err)
 	}

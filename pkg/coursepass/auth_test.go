@@ -29,7 +29,7 @@ func newAuthFixture(t *testing.T) authFixture {
 
 	return authFixture{
 		dbo:     dbo,
-		manager: NewAuthManager(dbo, logger, authCfg),
+		manager: NewAuthManager(dbo, logger, authCfg.JWTSecret, authCfg.JWTTTLSeconds),
 		repo:    db.NewCoursesRepo(dbo),
 		authCfg: authCfg,
 	}

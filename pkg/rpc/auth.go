@@ -20,7 +20,7 @@ type AuthService struct {
 
 func NewAuthService(dbc db.DB, logger embedlog.Logger, authCfg coursepass.AuthConfig) *AuthService {
 	return &AuthService{
-		authManager: coursepass.NewAuthManager(dbc, logger, authCfg),
+		authManager: coursepass.NewAuthManager(dbc, logger, authCfg.JWTSecret, authCfg.JWTTTLSeconds),
 		Logger:      logger,
 	}
 }
