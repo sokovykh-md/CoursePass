@@ -100,16 +100,16 @@ func TestExamManager_Start(t *testing.T) {
 
 		// Assert
 		require.NoError(t, err)
-		require.Positive(t, start.ExamID)
+		require.Positive(t, start.ID)
 		assert.Len(t, start.QuestionIDs, 2)
 		assert.Nil(t, start.FinishedAt)
 
 		defer func() {
-			_, deleteErr := fx.repo.DeleteExam(t.Context(), start.ExamID)
+			_, deleteErr := fx.repo.DeleteExam(t.Context(), start.ID)
 			require.NoError(t, deleteErr)
 		}()
 
-		exam, findErr := fx.repo.OneExam(t.Context(), &db.ExamSearch{ID: &start.ExamID, StudentID: &fx.student.ID})
+		exam, findErr := fx.repo.OneExam(t.Context(), &db.ExamSearch{ID: &start.ID, StudentID: &fx.student.ID})
 		require.NoError(t, findErr)
 		require.NotNil(t, exam)
 		assert.Equal(t, ExamStatusInProgress, exam.Status)
@@ -137,7 +137,7 @@ func TestExamManager_Start(t *testing.T) {
 		firstStart, err := fx.manager.Start(t.Context(), fx.student.ID, fx.course.ID)
 		require.NoError(t, err)
 		defer func() {
-			_, deleteErr := fx.repo.DeleteExam(t.Context(), firstStart.ExamID)
+			_, deleteErr := fx.repo.DeleteExam(t.Context(), firstStart.ID)
 			require.NoError(t, deleteErr)
 		}()
 
@@ -158,12 +158,12 @@ func TestExamManager_Question_NotInExam(t *testing.T) {
 	start, err := fx.manager.Start(t.Context(), fx.student.ID, fx.course.ID)
 	require.NoError(t, err)
 	defer func() {
-		_, deleteErr := fx.repo.DeleteExam(t.Context(), start.ExamID)
+		_, deleteErr := fx.repo.DeleteExam(t.Context(), start.ID)
 		require.NoError(t, deleteErr)
 	}()
 
 	// Act
-	_, err = fx.manager.Question(t.Context(), fx.student.ID, dbtest.NextID(), start.ExamID)
+	_, err = fx.manager.Question(t.Context(), fx.student.ID, dbtest.NextID(), start.ID)
 
 	// Assert
 	require.Error(t, err)
@@ -178,12 +178,12 @@ func TestExamManager_SaveAnswer_InvalidOptionIDs(t *testing.T) {
 	start, err := fx.manager.Start(t.Context(), fx.student.ID, fx.course.ID)
 	require.NoError(t, err)
 	defer func() {
-		_, deleteErr := fx.repo.DeleteExam(t.Context(), start.ExamID)
+		_, deleteErr := fx.repo.DeleteExam(t.Context(), start.ID)
 		require.NoError(t, deleteErr)
 	}()
 
 	// Act
-	err = fx.manager.SaveAnswer(t.Context(), fx.student.ID, start.ExamID, fx.questions[0].ID, []int{999})
+	err = fx.manager.SaveAnswer(t.Context(), fx.student.ID, start.ID, fx.questions[0].ID, []int{999})
 
 	// Assert
 	require.Error(t, err)
@@ -198,25 +198,28 @@ func TestExamManager_Submit_Success(t *testing.T) {
 	start, err := fx.manager.Start(t.Context(), fx.student.ID, fx.course.ID)
 	require.NoError(t, err)
 	defer func() {
-		_, deleteErr := fx.repo.DeleteExam(t.Context(), start.ExamID)
+		_, deleteErr := fx.repo.DeleteExam(t.Context(), start.ID)
 		require.NoError(t, deleteErr)
 	}()
 
-	require.NoError(t, fx.manager.SaveAnswer(t.Context(), fx.student.ID, start.ExamID, fx.questions[0].ID, []int{1}))
-	require.NoError(t, fx.manager.SaveAnswer(t.Context(), fx.student.ID, start.ExamID, fx.questions[1].ID, []int{2}))
+	require.NoError(t, fx.manager.SaveAnswer(t.Context(), fx.student.ID, start.ID, fx.questions[0].ID, []int{1}))
+	require.NoError(t, fx.manager.SaveAnswer(t.Context(), fx.student.ID, start.ID, fx.questions[1].ID, []int{2}))
 
 	// Act
-	result, err := fx.manager.Submit(t.Context(), fx.student.ID, start.ExamID)
+	result, err := fx.manager.Submit(t.Context(), fx.student.ID, start.ID)
 
 	// Assert
 	require.NoError(t, err)
-	assert.Equal(t, start.ExamID, result.ExamID)
-	assert.Equal(t, 2, result.TotalQuestions)
-	assert.Equal(t, 1, result.CorrectAnswers)
-	assert.Equal(t, 50, result.FinalScore)
+	assert.Equal(t, start.ID, result.ID)
+	require.NotNil(t, result.TotalQuestions)
+	assert.Equal(t, 2, *result.TotalQuestions)
+	require.NotNil(t, result.CorrectAnswers)
+	assert.Equal(t, 1, *result.CorrectAnswers)
+	require.NotNil(t, result.FinalScore)
+	assert.Equal(t, 50.0, *result.FinalScore)
 	assert.Equal(t, ExamStatusFailed, result.Status)
 
-	exam, findErr := fx.repo.OneExam(t.Context(), &db.ExamSearch{ID: &start.ExamID, StudentID: &fx.student.ID})
+	exam, findErr := fx.repo.OneExam(t.Context(), &db.ExamSearch{ID: &start.ID, StudentID: &fx.student.ID})
 	require.NoError(t, findErr)
 	require.NotNil(t, exam)
 	assert.Equal(t, ExamStatusFailed, exam.Status)
@@ -270,9 +273,9 @@ func TestExamManager_MyList_OnlyFinished(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 	require.Len(t, list, 1)
-	assert.Equal(t, finishedExam.ID, list[0].ExamID)
+	assert.Equal(t, finishedExam.ID, list[0].ID)
 	assert.Contains(t, []string{ExamStatusPassed, ExamStatusFailed}, list[0].Status)
-	assert.NotEqual(t, inProgressExam.ID, list[0].ExamID)
+	assert.NotEqual(t, inProgressExam.ID, list[0].ID)
 }
 
 func ptr[T any](v T) *T {

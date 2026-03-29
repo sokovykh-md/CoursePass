@@ -38,14 +38,6 @@ type AuthToken struct {
 	TokenType   string
 }
 
-type Student db.Student
-
-type studentAuth struct {
-	StudentID    int
-	Login        string
-	PasswordHash string
-}
-
 type AuthConfig struct {
 	JWTSecret     string
 	JWTTTLSeconds int
@@ -76,78 +68,16 @@ type tokenClaims struct {
 	Iat   int64
 }
 
+type studentAuth struct {
+	StudentID    int
+	Login        string
+	PasswordHash string
+}
+
+type Student db.Student
 type Course db.Course
-
-type ExamQuestionRequest struct {
-	ExamID     int
-	QuestionID int
-	StudentID  int
-}
-
-type ExamSaveAnswerRequest struct {
-	ExamID     int
-	QuestionID int
-	OptionIDs  []int
-	StudentID  int
-}
-
-type ExamSubmitRequest struct {
-	ExamID    int
-	StudentID int
-}
-
-type ExamMyListRequest struct {
-	StudentID int
-	Page      int
-	PageSize  int
-}
-
-type ExamStart struct {
-	ExamID      int
-	QuestionIDs []int
-	StartedAt   string
-	FinishedAt  *string
-}
-
-type Question struct {
-	QuestionID   int
-	QuestionText string
-	QuestionType string
-	PhotoURL     *string
-	Options      []QuestionOption
-}
-
-type QuestionOption struct {
-	OptionID   int
-	OptionText string
-	IsCorrect  bool
-}
-
-type ExamResult struct {
-	ExamID         int
-	Status         string
-	FinalScore     int
-	CorrectAnswers int
-	TotalQuestions int
-}
-
-type ExamSummary struct {
-	ExamID     int
-	CourseID   int
-	Status     string
-	FinalScore int
-	FinishedAt string
-}
-
-type ExamState struct {
-	ExamID      int
-	CourseID    int
-	Status      string
-	QuestionIDs []int
-	Answers     []ExamAnswer
-}
-
-type ExamAnswer struct {
-	QuestionID int
-	OptionIDs  []int
-}
+type Exam db.Exam
+type Question db.Question
+type ExamAnswer = db.ExamAnswer
+type QuestionOption = db.QuestionOption
+type VfsFile = db.VfsFile

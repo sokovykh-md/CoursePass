@@ -26,36 +26,33 @@ func NewAuthService(dbc db.DB, logger embedlog.Logger, authCfg coursepass.AuthCo
 }
 
 func (as *AuthService) Register(ctx context.Context, login, password, email, firstName, lastName string) (*Token, error) {
-	if err := validateRegisterRequest(login, password, email, firstName, lastName); err != nil {
-		as.Logger.Error(ctx, "auth register invalid params", "err", err)
+	if err := as.validateRegisterRequest(login, password, email, firstName, lastName); err != nil {
 		return nil, err
 	}
 
 	token, err := as.authManager.Register(ctx, login, password, email, firstName, lastName)
 	if err != nil {
-		as.Logger.Error(ctx, "auth register failed", "err", err)
-		return nil, mapDomainError(err)
+		return nil, newInternalError(err)
 	}
 
 	return newToken(token), nil
 }
 
 func (as *AuthService) Login(ctx context.Context, login, password string) (*Token, error) {
-	if err := validateLoginRequest(login, password); err != nil {
+	if err := as.validateLoginRequest(login, password); err != nil {
 		as.Logger.Error(ctx, "auth login invalid params", "err", err)
 		return nil, err
 	}
 
 	token, err := as.authManager.Login(ctx, login, password)
 	if err != nil {
-		as.Logger.Error(ctx, "auth login failed", "err", err)
-		return nil, mapDomainError(err)
+		return nil, newInternalError(err)
 	}
 
 	return newToken(token), nil
 }
 
-func validateRegisterRequest(login, password, email, firstName, lastName string) error {
+func (as *AuthService) validateRegisterRequest(login, password, email, firstName, lastName string) error {
 	if login == "" {
 		return newInvalidParamsError("login", "is required")
 	}
@@ -100,7 +97,7 @@ func validateRegisterRequest(login, password, email, firstName, lastName string)
 	return nil
 }
 
-func validateLoginRequest(login, password string) error {
+func (as *AuthService) validateLoginRequest(login, password string) error {
 	if login == "" {
 		return newInvalidParamsError("login", "is required")
 	}

@@ -1,6 +1,8 @@
 package rpc
 
 import (
+	"path"
+	"strings"
 	"time"
 
 	"courses/pkg/coursepass"
@@ -16,7 +18,7 @@ func formatTimePtr(v *time.Time) *string {
 	return &s
 }
 
-func newToken(token coursepass.AuthToken) *Token {
+func newToken(token *coursepass.AuthToken) *Token {
 	return &Token{
 		AccessToken: token.AccessToken,
 		ExpiresIn:   token.ExpiresIn,
@@ -57,48 +59,88 @@ func newCourseSummary(course coursepass.Course) CourseSummary {
 	}
 }
 
-func newExamStart(start coursepass.ExamStart) *ExamStart {
+func newExamStart(exam *coursepass.Exam) *ExamStart {
 	return &ExamStart{
-		ExamID:      start.ExamID,
-		QuestionIDs: start.QuestionIDs,
-		StartedAt:   start.StartedAt,
-		FinishedAt:  start.FinishedAt,
+		ExamID:      exam.ID,
+		QuestionIDs: exam.QuestionIDs,
+		StartedAt:   exam.CreatedAt.Format(dateTimeLayout),
+		FinishedAt:  formatTimePtr(exam.FinishedAt),
 	}
 }
 
-func newQuestion(question coursepass.Question) *Question {
+func newQuestion(question *coursepass.Question, mediaWebPath string) *Question {
 	return &Question{
-		QuestionID:   question.QuestionID,
+		QuestionID:   question.ID,
 		QuestionText: question.QuestionText,
 		QuestionType: question.QuestionType,
-		PhotoURL:     question.PhotoURL,
+		PhotoURL:     newQuestionPhotoURL(question.PhotoFile, mediaWebPath),
 		Options:      NewQuestionOptions(question.Options),
 	}
 }
 
-func NewQuestionOption(option coursepass.QuestionOption) *QuestionOption {
-	return &QuestionOption{
+func newQuestionPhotoURL(photoFile *coursepass.VfsFile, mediaWebPath string) *string {
+	if photoFile == nil || photoFile.Path == "" {
+		return nil
+	}
+
+	basePath := strings.TrimSpace(mediaWebPath)
+	if basePath == "" {
+		url := photoFile.Path
+		return &url
+	}
+
+	url := path.Join(basePath, strings.TrimPrefix(photoFile.Path, "/"))
+	return &url
+}
+
+func NewQuestionOption(option coursepass.QuestionOption) QuestionOption {
+	return QuestionOption{
 		OptionID:   option.OptionID,
 		OptionText: option.OptionText,
 	}
 }
 
-func newExamResult(result coursepass.ExamResult) *ExamResult {
+func newExamResult(exam *coursepass.Exam) *ExamResult {
+	finalScore := 0
+	if exam.FinalScore != nil {
+		finalScore = int(*exam.FinalScore)
+	}
+
+	correctAnswers := 0
+	if exam.CorrectAnswers != nil {
+		correctAnswers = *exam.CorrectAnswers
+	}
+
+	totalQuestions := 0
+	if exam.TotalQuestions != nil {
+		totalQuestions = *exam.TotalQuestions
+	}
+
 	return &ExamResult{
-		ExamID:         result.ExamID,
-		Status:         result.Status,
-		FinalScore:     result.FinalScore,
-		CorrectAnswers: result.CorrectAnswers,
-		TotalQuestions: result.TotalQuestions,
+		ExamID:         exam.ID,
+		Status:         exam.Status,
+		FinalScore:     finalScore,
+		CorrectAnswers: correctAnswers,
+		TotalQuestions: totalQuestions,
 	}
 }
 
-func newExamSummary(summary coursepass.ExamSummary) *ExamSummary {
-	return &ExamSummary{
-		ExamID:     summary.ExamID,
-		CourseID:   summary.CourseID,
-		Status:     summary.Status,
-		FinalScore: summary.FinalScore,
-		FinishedAt: summary.FinishedAt,
+func newExamSummary(exam coursepass.Exam) ExamSummary {
+	finalScore := 0
+	if exam.FinalScore != nil {
+		finalScore = int(*exam.FinalScore)
+	}
+
+	finishedAt := ""
+	if exam.FinishedAt != nil {
+		finishedAt = exam.FinishedAt.Format(dateTimeLayout)
+	}
+
+	return ExamSummary{
+		ExamID:     exam.ID,
+		CourseID:   exam.CourseID,
+		Status:     exam.Status,
+		FinalScore: finalScore,
+		FinishedAt: finishedAt,
 	}
 }

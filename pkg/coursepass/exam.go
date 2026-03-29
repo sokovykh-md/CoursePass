@@ -15,9 +15,8 @@ import (
 )
 
 type ExamManager struct {
-	db           db.DB
-	repo         db.CoursesRepo
-	mediaWebPath string
+	db   db.DB
+	repo db.CoursesRepo
 	embedlog.Logger
 }
 
@@ -33,24 +32,21 @@ const (
 	uxExamActiveStudentCourse = "ux_exams_active_student_course"
 )
 
-func NewExamManager(dbo db.DB, logger embedlog.Logger, mediaWebPath string) *ExamManager {
+func NewExamManager(dbo db.DB, logger embedlog.Logger, _ string) *ExamManager {
 	return &ExamManager{
-		db:           dbo,
-		repo:         db.NewCoursesRepo(dbo),
-		mediaWebPath: mediaWebPath,
-		Logger:       logger,
+		db:     dbo,
+		repo:   db.NewCoursesRepo(dbo),
+		Logger: logger,
 	}
 }
 
-func (em *ExamManager) Start(ctx context.Context, studentID, courseID int) (ExamStart, error) {
-	now := time.Now()
-	var examStart ExamStart
+func (em *ExamManager) Start(ctx context.Context, studentID, courseID int) (*Exam, error) {
+	var exam *Exam
 
 	err := em.db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		txRepo := em.repo.WithTransaction(tx)
 
-		err := em.getAvailableCourse(ctx, txRepo, courseID, now)
-		if err != nil {
+		if err := em.getAvailableCourse(ctx, txRepo, courseID, time.Now()); err != nil {
 			return err
 		}
 
@@ -59,57 +55,35 @@ func (em *ExamManager) Start(ctx context.Context, studentID, courseID int) (Exam
 			return err
 		}
 
-		questionIDs := Questions(questions).QuestionIDs()
-
-		examData, err := em.addExam(ctx, txRepo, courseID, studentID, questionIDs)
+		examData, err := em.addExam(ctx, txRepo, courseID, studentID, Questions(questions).IDs())
 		if err != nil {
 			return err
 		}
 
-		examStart = newExamStart(*examData, questionIDs)
+		exam = newExam(examData)
 
 		return nil
 	})
 	if err != nil {
-		return ExamStart{}, err
+		return nil, err
 	}
 
-	return examStart, nil
+	return exam, nil
 }
 
-func (em *ExamManager) Question(ctx context.Context, studentID, questionID, examID int) (Question, error) {
+func (em *ExamManager) Question(ctx context.Context, studentID, questionID, examID int) (*Question, error) {
 	exam, err := em.getExamByStudent(ctx, em.repo, studentID, examID)
 	if err != nil {
-		return Question{}, err
+		return nil, err
 	}
 	if exam.Status != ExamStatusInProgress {
-		return Question{}, ErrExamNotInProgress
+		return nil, ErrExamNotInProgress
 	}
 	if !slices.Contains(exam.QuestionIDs, questionID) {
-		return Question{}, ErrQuestionNotInExam
+		return nil, ErrQuestionNotInExam
 	}
 
-	question, err := em.getQuestionForExam(ctx, em.repo, exam.CourseID, questionID)
-	if err != nil {
-		return Question{}, err
-	}
-
-	return question, nil
-}
-
-func (em *ExamManager) getExamByStudent(ctx context.Context, repo db.CoursesRepo, studentID, examID int) (ExamState, error) {
-	examData, err := repo.OneExam(ctx, &db.ExamSearch{
-		ID:        &examID,
-		StudentID: &studentID,
-	})
-	if err != nil {
-		return ExamState{}, fmt.Errorf("failed get exam: %w", err)
-	}
-	if examData == nil {
-		return ExamState{}, ErrExamNotFound
-	}
-
-	return newExamState(*examData), nil
+	return em.getQuestionForExam(ctx, em.repo, exam.CourseID, questionID)
 }
 
 func (em *ExamManager) SaveAnswer(ctx context.Context, studentID, examID, questionID int, optionIDs []int) error {
@@ -125,15 +99,15 @@ func (em *ExamManager) SaveAnswer(ctx context.Context, studentID, examID, questi
 			return err
 		}
 
-		if err = validateAnswerOptions(question, optionIDs); err != nil {
+		if err = validateAnswerOptions(*question, optionIDs); err != nil {
 			return err
 		}
 
-		exam.Answers = append(exam.Answers, ExamAnswer{
+		exam.Answers = append(exam.Answers, db.ExamAnswer{
 			QuestionID: questionID,
 			OptionIDs:  slices.Clone(optionIDs),
 		})
-		return em.updateExamAnswers(ctx, txRepo, exam.ExamID, exam.Answers)
+		return em.updateExamAnswers(ctx, txRepo, exam.ID, exam.Answers)
 	})
 	if err != nil {
 		return fmt.Errorf("failed save answer: %w", err)
@@ -141,93 +115,8 @@ func (em *ExamManager) SaveAnswer(ctx context.Context, studentID, examID, questi
 	return nil
 }
 
-func (em *ExamManager) getQuestionForExam(ctx context.Context, repo db.CoursesRepo, courseID, questionID int) (Question, error) {
-	questionData, err := repo.OneQuestion(
-		ctx,
-		&db.QuestionSearch{
-			ID:       &questionID,
-			CourseID: &courseID,
-		},
-		repo.FullQuestion(),
-	)
-	if err != nil {
-		return Question{}, fmt.Errorf("failed get question: %w", err)
-	}
-	if questionData == nil {
-		return Question{}, ErrQuestionNotFound
-	}
-
-	return newQuestion(*questionData, em.mediaWebPath), nil
-}
-
-func (em *ExamManager) getExamForAnswer(ctx context.Context, txRepo db.CoursesRepo, studentID, examID, questionID int) (ExamState, error) {
-	examData, err := txRepo.OneExam(ctx, &db.ExamSearch{
-		ID:        &examID,
-		StudentID: &studentID,
-	})
-	if err != nil {
-		return ExamState{}, fmt.Errorf("failed get exam: %w", err)
-	}
-	if examData == nil {
-		return ExamState{}, ErrExamNotFound
-	}
-
-	exam := newExamState(*examData)
-	if err = validateExamQuestionAccess(exam, questionID); err != nil {
-		return ExamState{}, err
-	}
-
-	answerByQuestionID := ExamAnswers(exam.Answers).IndexByQuestionID()
-	if _, exists := answerByQuestionID[questionID]; exists {
-		return ExamState{}, ErrAnswerAlreadySaved
-	}
-
-	return exam, nil
-}
-
-func (em *ExamManager) getQuestionForAnswer(ctx context.Context, txRepo db.CoursesRepo, courseID, questionID int) (Question, error) {
-	questionData, err := txRepo.OneQuestion(ctx, &db.QuestionSearch{
-		ID:       &questionID,
-		CourseID: &courseID,
-	})
-	if err != nil {
-		return Question{}, fmt.Errorf("failed get question: %w", err)
-	}
-	if questionData == nil {
-		return Question{}, ErrQuestionNotFound
-	}
-
-	return newQuestion(*questionData, em.mediaWebPath), nil
-}
-
-func validateExamQuestionAccess(exam ExamState, questionID int) error {
-	if exam.Status != ExamStatusInProgress {
-		return ErrExamNotInProgress
-	}
-	if !slices.Contains(exam.QuestionIDs, questionID) {
-		return ErrQuestionNotInExam
-	}
-
-	return nil
-}
-
-func validateAnswerOptions(question Question, optionIDs []int) error {
-	allowedOptionByID := QuestionOptions(question.Options).IndexByOptionID()
-	for _, id := range optionIDs {
-		if _, ok := allowedOptionByID[id]; !ok {
-			return ErrInvalidOptionIDs
-		}
-	}
-
-	if len(optionIDs) > 1 && question.QuestionType == QuestionTypeSingleChoice {
-		return ErrInvalidOptionIDs
-	}
-
-	return nil
-}
-
-func (em *ExamManager) Submit(ctx context.Context, studentID, examID int) (ExamResult, error) {
-	var examResult ExamResult
+func (em *ExamManager) Submit(ctx context.Context, studentID, examID int) (*Exam, error) {
+	var result *Exam
 
 	err := em.db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		txRepo := em.repo.WithTransaction(tx)
@@ -241,38 +130,135 @@ func (em *ExamManager) Submit(ctx context.Context, studentID, examID int) (ExamR
 			return err
 		}
 
-		status, correctAnswers, totalQuestions, finalScore := calculateSubmitMetrics(exam, questions)
+		status, correctAnswers, totalQuestions, finalScore := calculateSubmitMetrics(*exam, questions)
 		finishedAt := time.Now()
-		if err = em.updateSubmittedExam(ctx, txRepo, exam.ExamID, status, correctAnswers, totalQuestions, finalScore, finishedAt); err != nil {
+		if err = em.updateSubmittedExam(ctx, txRepo, exam.ID, status, correctAnswers, totalQuestions, finalScore, finishedAt); err != nil {
 			return err
 		}
 
-		examResult = newExamResult(exam.ExamID, status, finalScore, correctAnswers, totalQuestions)
+		finalScoreFloat := float64(finalScore)
+		exam.Status = status
+		exam.CorrectAnswers = &correctAnswers
+		exam.TotalQuestions = &totalQuestions
+		exam.FinalScore = &finalScoreFloat
+		exam.FinishedAt = &finishedAt
+		result = exam
 
 		return nil
 	})
 	if err != nil {
-		return ExamResult{}, fmt.Errorf("failed submit exam: %w", err)
+		return nil, fmt.Errorf("failed submit exam: %w", err)
 	}
 
-	return examResult, nil
+	return result, nil
 }
 
-func (em *ExamManager) getExamForSubmit(ctx context.Context, txRepo db.CoursesRepo, studentID, examID int) (ExamState, error) {
+func (em *ExamManager) MyList(ctx context.Context, studentID, page, pageSize int) ([]Exam, error) {
+	exams, err := em.repo.ExamsByFilters(ctx, &db.ExamSearch{
+		StudentID: &studentID,
+		StatusIn:  []string{ExamStatusPassed, ExamStatusFailed},
+	}, db.Pager{
+		Page:     page,
+		PageSize: pageSize,
+	},
+		db.WithSort(db.NewSortField(db.Columns.Exam.FinishedAt, true)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed get exams: %w", err)
+	}
+
+	return NewExams(exams), nil
+}
+
+func (em *ExamManager) getExamByStudent(ctx context.Context, repo db.CoursesRepo, studentID, examID int) (*Exam, error) {
+	examData, err := repo.OneExam(ctx, &db.ExamSearch{
+		ID:        &examID,
+		StudentID: &studentID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed get exam: %w", err)
+	}
+	if examData == nil {
+		return nil, ErrExamNotFound
+	}
+
+	return newExam(examData), nil
+}
+
+func (em *ExamManager) getQuestionForExam(ctx context.Context, repo db.CoursesRepo, courseID, questionID int) (*Question, error) {
+	questionData, err := repo.OneQuestion(
+		ctx,
+		&db.QuestionSearch{
+			ID:       &questionID,
+			CourseID: &courseID,
+		},
+		repo.FullQuestion(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed get question: %w", err)
+	}
+	if questionData == nil {
+		return nil, ErrQuestionNotFound
+	}
+
+	return newQuestion(questionData), nil
+}
+
+func (em *ExamManager) getExamForAnswer(ctx context.Context, txRepo db.CoursesRepo, studentID, examID, questionID int) (*Exam, error) {
 	examData, err := txRepo.OneExam(ctx, &db.ExamSearch{
 		ID:        &examID,
 		StudentID: &studentID,
 	})
 	if err != nil {
-		return ExamState{}, fmt.Errorf("failed get exam: %w", err)
+		return nil, fmt.Errorf("failed get exam: %w", err)
 	}
 	if examData == nil {
-		return ExamState{}, ErrExamNotFound
+		return nil, ErrExamNotFound
 	}
 
-	exam := newExamState(*examData)
+	exam := newExam(examData)
+	if err = validateExamQuestionAccess(*exam, questionID); err != nil {
+		return nil, err
+	}
+
+	answerByQuestionID := ExamAnswers(exam.Answers).IndexByQuestionID()
+	if _, exists := answerByQuestionID[questionID]; exists {
+		return nil, ErrAnswerAlreadySaved
+	}
+
+	return exam, nil
+}
+
+func (em *ExamManager) getQuestionForAnswer(ctx context.Context, txRepo db.CoursesRepo, courseID, questionID int) (*Question, error) {
+	questionData, err := txRepo.OneQuestion(ctx, &db.QuestionSearch{
+		ID:       &questionID,
+		CourseID: &courseID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed get question: %w", err)
+	}
+	if questionData == nil {
+		return nil, ErrQuestionNotFound
+	}
+
+	return newQuestion(questionData), nil
+}
+
+func (em *ExamManager) getExamForSubmit(ctx context.Context, txRepo db.CoursesRepo, studentID, examID int) (*Exam, error) {
+	examData, err := txRepo.OneExam(ctx, &db.ExamSearch{
+		ID:        &examID,
+		StudentID: &studentID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed get exam: %w", err)
+	}
+	if examData == nil {
+		return nil, ErrExamNotFound
+	}
+
+	exam := newExam(examData)
 	if exam.Status != ExamStatusInProgress {
-		return ExamState{}, ErrExamNotInProgress
+		return nil, ErrExamNotInProgress
 	}
 
 	return exam, nil
@@ -292,37 +278,7 @@ func (em *ExamManager) getQuestionsForSubmit(ctx context.Context, txRepo db.Cour
 		return nil, fmt.Errorf("failed get questions: %w", err)
 	}
 
-	return newQuestions(questionData, em.mediaWebPath), nil
-}
-
-func calculateSubmitMetrics(exam ExamState, questions []Question) (string, int, int, int) {
-	totalQuestions := len(exam.QuestionIDs)
-	correctAnswers := countCorrectAnswers(exam.QuestionIDs, questions, exam.Answers)
-	finalScore := calculateFinalScore(correctAnswers, totalQuestions)
-
-	status := ExamStatusFailed
-	if finalScore >= passScorePercent {
-		status = ExamStatusPassed
-	}
-
-	return status, correctAnswers, totalQuestions, finalScore
-}
-
-func (em *ExamManager) MyList(ctx context.Context, studentID, page, pageSize int) ([]ExamSummary, error) {
-	exams, err := em.repo.ExamsByFilters(ctx, &db.ExamSearch{
-		StudentID: &studentID,
-		StatusIn:  []string{ExamStatusPassed, ExamStatusFailed},
-	}, db.Pager{
-		Page:     page,
-		PageSize: pageSize,
-	},
-		db.WithSort(db.NewSortField(db.Columns.Exam.FinishedAt, true)),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed get exams: %w", err)
-	}
-
-	return newExamSummaries(exams), nil
+	return []Question(NewQuestions(questionData)), nil
 }
 
 func (em *ExamManager) getAvailableCourse(ctx context.Context, txRepo db.CoursesRepo, courseID int, now time.Time) error {
@@ -355,7 +311,7 @@ func (em *ExamManager) getCourseQuestions(ctx context.Context, txRepo db.Courses
 		return nil, ErrNoQuestions
 	}
 
-	return newQuestions(questions, em.mediaWebPath), nil
+	return []Question(NewQuestions(questions)), nil
 }
 
 func (em *ExamManager) addExam(ctx context.Context, txRepo db.CoursesRepo, courseID, studentID int, questionIDs []int) (*db.Exam, error) {
@@ -378,12 +334,7 @@ func (em *ExamManager) addExam(ctx context.Context, txRepo db.CoursesRepo, cours
 	return examData, nil
 }
 
-func isActiveExamUniqueViolation(err error) bool {
-	var pgErr pg.Error
-	return errors.As(err, &pgErr) && pgErr.Field('n') == uxExamActiveStudentCourse
-}
-
-func (em *ExamManager) updateExamAnswers(ctx context.Context, txRepo db.CoursesRepo, examID int, answers []ExamAnswer) error {
+func (em *ExamManager) updateExamAnswers(ctx context.Context, txRepo db.CoursesRepo, examID int, answers db.ExamAnswers) error {
 	updated, err := txRepo.UpdateExam(
 		ctx,
 		newDBExamAnswersUpdate(examID, answers),
@@ -400,17 +351,9 @@ func (em *ExamManager) updateExamAnswers(ctx context.Context, txRepo db.CoursesR
 }
 
 func (em *ExamManager) updateSubmittedExam(ctx context.Context, txRepo db.CoursesRepo, examID int, status string, correctAnswers, totalQuestions, finalScore int, finishedAt time.Time) error {
-	finalScoreFloat := float64(finalScore)
 	updated, err := txRepo.UpdateExam(
 		ctx,
-		newDBExamSubmitUpdate(
-			examID,
-			status,
-			correctAnswers,
-			totalQuestions,
-			finalScoreFloat,
-			finishedAt,
-		),
+		newDBExamSubmitUpdate(examID, status, correctAnswers, totalQuestions, float64(finalScore), finishedAt),
 		db.WithColumns(
 			db.Columns.Exam.Status,
 			db.Columns.Exam.CorrectAnswers,
@@ -428,9 +371,54 @@ func (em *ExamManager) updateSubmittedExam(ctx context.Context, txRepo db.Course
 
 	return nil
 }
-func countCorrectAnswers(questionIDs []int, questions []Question, answers []ExamAnswer) int {
-	questionByID := Questions(questions).IndexByQuestionID()
-	answerByQuestionID := ExamAnswers(answers).IndexByQuestionID()
+
+func validateExamQuestionAccess(exam Exam, questionID int) error {
+	if exam.Status != ExamStatusInProgress {
+		return ErrExamNotInProgress
+	}
+	if !slices.Contains(exam.QuestionIDs, questionID) {
+		return ErrQuestionNotInExam
+	}
+
+	return nil
+}
+
+func validateAnswerOptions(question Question, optionIDs []int) error {
+	allowedOptionByID := QuestionOptions(question.Options).IndexByOptionID()
+	for _, id := range optionIDs {
+		if _, ok := allowedOptionByID[id]; !ok {
+			return ErrInvalidOptionIDs
+		}
+	}
+
+	if len(optionIDs) > 1 && question.QuestionType == QuestionTypeSingleChoice {
+		return ErrInvalidOptionIDs
+	}
+
+	return nil
+}
+
+func calculateSubmitMetrics(exam Exam, questions []Question) (string, int, int, int) {
+	totalQuestions := len(exam.QuestionIDs)
+	correctAnswers := countCorrectAnswers(exam.QuestionIDs, questions, ExamAnswers(exam.Answers))
+	finalScore := calculateFinalScore(correctAnswers, totalQuestions)
+
+	status := ExamStatusFailed
+	if finalScore >= passScorePercent {
+		status = ExamStatusPassed
+	}
+
+	return status, correctAnswers, totalQuestions, finalScore
+}
+
+func isActiveExamUniqueViolation(err error) bool {
+	var pgErr pg.Error
+	return errors.As(err, &pgErr) && pgErr.Field('n') == uxExamActiveStudentCourse
+}
+
+func countCorrectAnswers(questionIDs []int, questions []Question, answers ExamAnswers) int {
+	questionByID := Questions(questions).Index()
+	answerByQuestionID := answers.IndexByQuestionID()
 
 	var correctAnswers int
 	for _, questionID := range questionIDs {
@@ -439,7 +427,7 @@ func countCorrectAnswers(questionIDs []int, questions []Question, answers []Exam
 			continue
 		}
 
-		correctOptionIDs := getCorrectOptionIDs(question.Options)
+		correctOptionIDs := getCorrectOptionIDs(QuestionOptions(question.Options))
 		answer, hasAnswer := answerByQuestionID[questionID]
 		if !hasAnswer {
 			continue
@@ -453,8 +441,8 @@ func countCorrectAnswers(questionIDs []int, questions []Question, answers []Exam
 	return correctAnswers
 }
 
-func getCorrectOptionIDs(options []QuestionOption) []int {
-	optionByCorrectness := QuestionOptions(options).GroupByIsCorrect()
+func getCorrectOptionIDs(options QuestionOptions) []int {
+	optionByCorrectness := options.GroupByIsCorrect()
 	correctOptions, ok := optionByCorrectness[true]
 	if !ok {
 		return nil

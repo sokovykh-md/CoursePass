@@ -41,11 +41,11 @@ type ExamStart struct {
 }
 
 type Question struct {
-	QuestionID   int               `json:"questionId"`
-	QuestionText string            `json:"questionText"`
-	QuestionType string            `json:"questionType"`
-	PhotoURL     *string           `json:"photoUrl"`
-	Options      []*QuestionOption `json:"options"`
+	QuestionID   int              `json:"questionId"`
+	QuestionText string           `json:"questionText"`
+	QuestionType string           `json:"questionType"`
+	PhotoURL     *string          `json:"photoUrl"`
+	Options      []QuestionOption `json:"options"`
 }
 
 type QuestionOption struct {

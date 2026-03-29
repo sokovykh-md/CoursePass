@@ -7,8 +7,8 @@ import (
 
 func newCourseSummaries(in []coursepass.Course) []CourseSummary { return Map(in, newCourseSummary) }
 
-func newExamSummaries(in []coursepass.ExamSummary) []*ExamSummary { return Map(in, newExamSummary) }
+func newExamSummaries(in []coursepass.Exam) []ExamSummary { return Map(in, newExamSummary) }
 
-func NewQuestionOptions(in []coursepass.QuestionOption) []*QuestionOption {
+func NewQuestionOptions(in []coursepass.QuestionOption) []QuestionOption {
 	return Map(in, NewQuestionOption)
 }

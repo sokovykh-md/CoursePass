@@ -2,7 +2,7 @@ package rpc
 
 //go:generate colgen -imports courses/pkg/coursepass
 //colgen:CourseSummary:map(coursepass.Course)
-//colgen:ExamSummary:map(coursepass.ExamSummary)
+//colgen:ExamSummary:map(coursepass.Exam)
 //colgen:QuestionOption:Map(coursepass.QuestionOption)
 
 func Map[S, T any](in []S, convert func(S) T) []T {

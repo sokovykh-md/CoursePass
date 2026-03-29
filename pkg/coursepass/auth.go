@@ -34,10 +34,10 @@ func NewAuthManager(dbo db.DB, logger embedlog.Logger, authCfg AuthConfig) *Auth
 	}
 }
 
-func (am *AuthManager) Register(ctx context.Context, login, password, email, firstName, lastName string) (AuthToken, error) {
-	hash, err := passwordHash(password)
+func (am *AuthManager) Register(ctx context.Context, login, password, email, firstName, lastName string) (*AuthToken, error) {
+	hash, err := am.passwordHash(password)
 	if err != nil {
-		return AuthToken{}, err
+		return nil, err
 	}
 
 	var authStudent studentAuth
@@ -60,26 +60,26 @@ func (am *AuthManager) Register(ctx context.Context, login, password, email, fir
 		return nil
 	})
 	if err != nil {
-		return AuthToken{}, err
+		return nil, err
 	}
 
 	return am.newTokenForStudent(authStudent)
 }
 
-func (am *AuthManager) Login(ctx context.Context, login, password string) (AuthToken, error) {
+func (am *AuthManager) Login(ctx context.Context, login, password string) (*AuthToken, error) {
 	student, err := am.studentByLogin(ctx, login)
 	if err != nil {
-		return AuthToken{}, err
+		return nil, err
 	}
 
-	if err = checkPassword(student.PasswordHash, password); err != nil {
-		return AuthToken{}, ErrInvalidCredentials
+	if err = am.checkPassword(student.PasswordHash, password); err != nil {
+		return nil, ErrInvalidCredentials
 	}
 
 	return am.newTokenForStudent(student)
 }
 
-func passwordHash(password string) (string, error) {
+func (am *AuthManager) passwordHash(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", fmt.Errorf("failed generate hash password: %w", err)
@@ -88,7 +88,7 @@ func passwordHash(password string) (string, error) {
 	return string(hash), nil
 }
 
-func isUniqueConstraintViolation(err error, constraintName string) bool {
+func (am *AuthManager) isUniqueConstraintViolation(err error, constraintName string) bool {
 	var pgErr pg.Error
 	return errors.As(err, &pgErr) && pgErr.Field('n') == constraintName
 }
@@ -124,10 +124,10 @@ func (am *AuthManager) ensureEmailAvailable(ctx context.Context, repo db.Courses
 func (am *AuthManager) addStudent(ctx context.Context, repo db.CoursesRepo, login, passwordHash, firstName, lastName, email string) (*db.Student, error) {
 	student, err := repo.AddStudent(ctx, newDBStudent(login, passwordHash, firstName, lastName, email))
 	if err != nil {
-		if isUniqueConstraintViolation(err, uxStudentsLoginConstraint) {
+		if am.isUniqueConstraintViolation(err, uxStudentsLoginConstraint) {
 			return nil, ErrLoginExists
 		}
-		if isUniqueConstraintViolation(err, uxStudentsEmailConstraint) {
+		if am.isUniqueConstraintViolation(err, uxStudentsEmailConstraint) {
 			return nil, ErrEmailExists
 		}
 
@@ -151,14 +151,14 @@ func (am *AuthManager) studentByLogin(ctx context.Context, login string) (studen
 	return newStudentAuth(*studentData), nil
 }
 
-func checkPassword(hash, password string) error {
+func (am *AuthManager) checkPassword(hash, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 }
 
-func (am *AuthManager) newTokenForStudent(student studentAuth) (AuthToken, error) {
+func (am *AuthManager) newTokenForStudent(student studentAuth) (*AuthToken, error) {
 	token, expiresIn, err := generateJWT(am.auth, student.StudentID, student.Login)
 	if err != nil {
-		return AuthToken{}, fmt.Errorf("failed create JWT: %w", err)
+		return nil, fmt.Errorf("failed create JWT: %w", err)
 	}
 
 	return newAuthToken(token, expiresIn), nil

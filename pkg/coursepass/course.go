@@ -46,7 +46,7 @@ func (cm *CourseManager) availableCourses(ctx context.Context, currentTime time.
 		return nil, fmt.Errorf("failed get courses: %w", err)
 	}
 
-	return newCourses(courses), nil
+	return NewCourses(courses), nil
 }
 
 func (cm *CourseManager) courseByID(ctx context.Context, courseID int) (*Course, error) {

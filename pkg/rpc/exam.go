@@ -14,19 +14,21 @@ type ExamService struct {
 	zenrpc.Service
 	embedlog.Logger
 
-	examManager *coursepass.ExamManager
+	examManager  *coursepass.ExamManager
+	mediaWebPath string
 }
 
 func NewExamService(dbc db.DB, logger embedlog.Logger, mediaWebPath string) *ExamService {
 	return &ExamService{
-		examManager: coursepass.NewExamManager(dbc, logger, mediaWebPath),
-		Logger:      logger,
+		examManager:  coursepass.NewExamManager(dbc, logger, mediaWebPath),
+		Logger:       logger,
+		mediaWebPath: mediaWebPath,
 	}
 }
 
 func (es *ExamService) Start(ctx context.Context, courseID int) (*ExamStart, error) {
 	if courseID < 1 {
-		return nil, newInvalidParamsError("courseId", "must be greater than 0")
+		return nil, newInvalidParamsError("courseID", "must be greater than 0")
 	}
 
 	studentID, ok := studentIDFromContext(ctx)
@@ -34,12 +36,12 @@ func (es *ExamService) Start(ctx context.Context, courseID int) (*ExamStart, err
 		return nil, ErrInvalidToken
 	}
 
-	start, err := es.examManager.Start(ctx, studentID, courseID)
+	exam, err := es.examManager.Start(ctx, studentID, courseID)
 	if err != nil {
-		return nil, mapDomainError(err)
+		return nil, newInternalError(err)
 	}
 
-	return newExamStart(start), nil
+	return newExamStart(exam), nil
 }
 
 func (es *ExamService) GetQuestion(ctx context.Context, examID, questionID int) (*Question, error) {
@@ -57,10 +59,10 @@ func (es *ExamService) GetQuestion(ctx context.Context, examID, questionID int) 
 
 	question, err := es.examManager.Question(ctx, studentID, questionID, examID)
 	if err != nil {
-		return nil, mapDomainError(err)
+		return nil, newInternalError(err)
 	}
 
-	return newQuestion(question), nil
+	return newQuestion(question, es.mediaWebPath), nil
 }
 
 func (es *ExamService) Answer(ctx context.Context, examID, questionID int, optionIDs []int) error {
@@ -81,7 +83,7 @@ func (es *ExamService) Answer(ctx context.Context, examID, questionID int, optio
 
 	err := es.examManager.SaveAnswer(ctx, studentID, examID, questionID, optionIDs)
 	if err != nil {
-		return mapDomainError(err)
+		return newInternalError(err)
 	}
 
 	return nil
@@ -97,15 +99,15 @@ func (es *ExamService) Submit(ctx context.Context, examID int) (*ExamResult, err
 		return nil, ErrInvalidToken
 	}
 
-	result, err := es.examManager.Submit(ctx, studentID, examID)
+	exam, err := es.examManager.Submit(ctx, studentID, examID)
 	if err != nil {
-		return nil, mapDomainError(err)
+		return nil, newInternalError(err)
 	}
 
-	return newExamResult(result), nil
+	return newExamResult(exam), nil
 }
 
-func (es *ExamService) History(ctx context.Context, page, pageSize int) ([]*ExamSummary, error) {
+func (es *ExamService) History(ctx context.Context, page, pageSize int) ([]ExamSummary, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -120,7 +122,7 @@ func (es *ExamService) History(ctx context.Context, page, pageSize int) ([]*Exam
 
 	exams, err := es.examManager.MyList(ctx, studentID, page, pageSize)
 	if err != nil {
-		return nil, mapDomainError(err)
+		return nil, newInternalError(err)
 	}
 
 	return newExamSummaries(exams), nil
