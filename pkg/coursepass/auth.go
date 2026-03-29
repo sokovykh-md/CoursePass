@@ -70,7 +70,7 @@ func (am *AuthManager) Register(ctx context.Context, login, password, email, fir
 		return nil, err
 	}
 
-	return am.newTokenForStudent(authStudent)
+	return am.NewTokenForStudent(authStudent)
 }
 
 func (am *AuthManager) Login(ctx context.Context, login, password string) (*AuthToken, error) {
@@ -83,7 +83,7 @@ func (am *AuthManager) Login(ctx context.Context, login, password string) (*Auth
 		return nil, ErrInvalidCredentials
 	}
 
-	return am.newTokenForStudent(student)
+	return am.NewTokenForStudent(student)
 }
 
 func (am *AuthManager) passwordHash(password string) (string, error) {
@@ -141,7 +141,7 @@ func (am *AuthManager) addStudent(ctx context.Context, repo db.CoursesRepo, logi
 		return nil, fmt.Errorf("failed add student: %w", err)
 	}
 
-	domainStudent := newStudent(student)
+	domainStudent := NewStudent(student)
 	if domainStudent == nil {
 		return nil, fmt.Errorf("failed add student: empty student")
 	}
@@ -160,7 +160,7 @@ func (am *AuthManager) studentByLogin(ctx context.Context, login string) (*Stude
 		return nil, ErrInvalidCredentials
 	}
 
-	domainStudent := newStudent(studentData)
+	domainStudent := NewStudent(studentData)
 	if domainStudent == nil {
 		return nil, ErrInvalidCredentials
 	}
@@ -172,7 +172,7 @@ func (am *AuthManager) checkPassword(hash, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 }
 
-func (am *AuthManager) newTokenForStudent(student *Student) (*AuthToken, error) {
+func (am *AuthManager) NewTokenForStudent(student *Student) (*AuthToken, error) {
 	if student == nil {
 		return nil, ErrInvalidCredentials
 	}

@@ -60,7 +60,7 @@ func (cm *CourseManager) courseByID(ctx context.Context, courseID int) (*Course,
 		return nil, ErrCourseNotFound
 	}
 
-	return newCourse(courseData), nil
+	return NewCourse(courseData), nil
 }
 
 func (cm *CourseManager) studentByID(ctx context.Context, studentID int) (*Student, error) {
@@ -74,5 +74,5 @@ func (cm *CourseManager) studentByID(ctx context.Context, studentID int) (*Stude
 		return nil, ErrStudentNotFound
 	}
 
-	return newStudent(studentData), nil
+	return NewStudent(studentData), nil
 }

@@ -1,9 +1,10 @@
 package coursepass
 
 import (
-	"courses/pkg/db"
 	"errors"
 	"fmt"
+
+	"courses/pkg/db"
 )
 
 var (
@@ -63,10 +64,72 @@ type tokenClaims struct {
 	Iat   int64
 }
 
-type Student db.Student
-type Course db.Course
-type Exam db.Exam
-type Question db.Question
-type ExamAnswer = db.ExamAnswer
-type QuestionOption = db.QuestionOption
-type VfsFile = db.VfsFile
+type Student struct {
+	db.Student
+}
+
+func NewStudent(in *db.Student) *Student {
+	if in == nil {
+		return nil
+	}
+
+	return &Student{
+		Student: *in,
+	}
+}
+
+type Course struct {
+	db.Course
+}
+
+func NewCourse(in *db.Course) *Course {
+	if in == nil {
+		return nil
+	}
+
+	return &Course{
+		Course: *in,
+	}
+}
+
+type Exam struct {
+	db.Exam
+}
+
+func NewExam(in *db.Exam) *Exam {
+	if in == nil {
+		return nil
+	}
+
+	return &Exam{
+		Exam: *in,
+	}
+}
+
+type Question struct {
+	db.Question
+}
+
+func NewQuestion(in *db.Question) *Question {
+	if in == nil {
+		return nil
+	}
+
+	return &Question{
+		Question: *in,
+	}
+}
+
+type VfsFile struct {
+	db.VfsFile
+}
+
+func NewVfsFile(in *db.VfsFile) *VfsFile {
+	if in == nil {
+		return nil
+	}
+
+	return &VfsFile{
+		VfsFile: *in,
+	}
+}
