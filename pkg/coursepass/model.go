@@ -38,11 +38,6 @@ type AuthToken struct {
 	TokenType   string
 }
 
-type AuthConfig struct {
-	JWTSecret     string
-	JWTTTLSeconds int
-}
-
 type ValidationError struct {
 	Field  string
 	Reason string

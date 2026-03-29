@@ -18,13 +18,14 @@ type AuthService struct {
 	authManager *coursepass.AuthManager
 }
 
-func NewAuthService(dbc db.DB, logger embedlog.Logger, authCfg coursepass.AuthConfig) *AuthService {
+func NewAuthService(dbc db.DB, logger embedlog.Logger, jwtSecret string, jwtTTLSeconds int) *AuthService {
 	return &AuthService{
-		authManager: coursepass.NewAuthManager(dbc, logger, authCfg.JWTSecret, authCfg.JWTTTLSeconds),
+		authManager: coursepass.NewAuthManager(dbc, logger, jwtSecret, jwtTTLSeconds),
 		Logger:      logger,
 	}
 }
 
+// zenrpc:-32602 invalid params
 func (as *AuthService) Register(ctx context.Context, login, password, email, firstName, lastName string) (*Token, error) {
 	if err := as.validateRegisterRequest(login, password, email, firstName, lastName); err != nil {
 		return nil, err
@@ -38,6 +39,7 @@ func (as *AuthService) Register(ctx context.Context, login, password, email, fir
 	return newToken(token), nil
 }
 
+// zenrpc:-32602 invalid params
 func (as *AuthService) Login(ctx context.Context, login, password string) (*Token, error) {
 	if err := as.validateLoginRequest(login, password); err != nil {
 		return nil, err

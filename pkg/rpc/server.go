@@ -3,7 +3,6 @@ package rpc
 import (
 	"net/http"
 
-	"courses/pkg/coursepass"
 	"courses/pkg/db"
 
 	"github.com/vmkteam/embedlog"
@@ -35,7 +34,7 @@ var allowDebugFn = func() zm.AllowDebugFunc {
 //go:generate go tool zenrpc
 
 // New returns new zenrpc Server.
-func New(dbo db.DB, logger embedlog.Logger, authCfg coursepass.AuthConfig, isDevel bool, mediaWebPath string) *zenrpc.Server {
+func New(dbo db.DB, logger embedlog.Logger, jwtSecret string, jwtTTLSeconds int, isDevel bool, mediaWebPath string) *zenrpc.Server {
 	rpc := zenrpc.NewServer(zenrpc.Options{
 		ExposeSMD: true,
 		AllowCORS: true,
@@ -54,12 +53,12 @@ func New(dbo db.DB, logger embedlog.Logger, authCfg coursepass.AuthConfig, isDev
 	rpc.Use(
 		zm.WithSLog(logger.Print, zm.DefaultServerName, nil),
 		zm.WithErrorSLog(logger.Print, zm.DefaultServerName, nil),
-		authMiddleware(authCfg, logger),
+		authMiddleware(jwtSecret, logger),
 	)
 
 	// services
 	rpc.RegisterAll(map[string]zenrpc.Invoker{
-		NSAuth:   NewAuthService(dbo, logger, authCfg),
+		NSAuth:   NewAuthService(dbo, logger, jwtSecret, jwtTTLSeconds),
 		NSCourse: NewCoursesService(dbo, logger),
 		NSExam:   NewExamService(dbo, logger, mediaWebPath),
 	})

@@ -12,26 +12,26 @@ import (
 )
 
 type authFixture struct {
-	dbo     db.DB
-	manager *AuthManager
-	repo    db.CoursesRepo
-	authCfg AuthConfig
+	dbo           db.DB
+	manager       *AuthManager
+	repo          db.CoursesRepo
+	jwtSecret     string
+	jwtTTLSeconds int
 }
 
 func newAuthFixture(t *testing.T) authFixture {
 	t.Helper()
 
 	dbo, logger := dbtest.Setup(t)
-	authCfg := AuthConfig{
-		JWTSecret:     "test-secret",
-		JWTTTLSeconds: 3600,
-	}
+	jwtSecret := "test-secret"
+	jwtTTLSeconds := 3600
 
 	return authFixture{
-		dbo:     dbo,
-		manager: NewAuthManager(dbo, logger, authCfg.JWTSecret, authCfg.JWTTTLSeconds),
-		repo:    db.NewCoursesRepo(dbo),
-		authCfg: authCfg,
+		dbo:           dbo,
+		manager:       NewAuthManager(dbo, logger, jwtSecret, jwtTTLSeconds),
+		repo:          db.NewCoursesRepo(dbo),
+		jwtSecret:     jwtSecret,
+		jwtTTLSeconds: jwtTTLSeconds,
 	}
 }
 
@@ -89,10 +89,10 @@ func TestAuthManager_Register_Success(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 	assert.NotEmpty(t, token.AccessToken)
-	assert.Equal(t, fx.authCfg.JWTTTLSeconds, token.ExpiresIn)
+	assert.Equal(t, fx.jwtTTLSeconds, token.ExpiresIn)
 	assert.Equal(t, "Bearer", token.TokenType)
 
-	studentID, err := ValidateJWT(fx.authCfg.JWTSecret, token.AccessToken)
+	studentID, err := ValidateJWT(fx.jwtSecret, token.AccessToken)
 	require.NoError(t, err)
 	assert.Positive(t, studentID)
 
@@ -191,7 +191,7 @@ func TestAuthManager_Login_Success(t *testing.T) {
 	assert.NotEmpty(t, token.AccessToken)
 	assert.Equal(t, "Bearer", token.TokenType)
 
-	studentID, err := ValidateJWT(fx.authCfg.JWTSecret, token.AccessToken)
+	studentID, err := ValidateJWT(fx.jwtSecret, token.AccessToken)
 	require.NoError(t, err)
 	assert.Equal(t, student.ID, studentID)
 }

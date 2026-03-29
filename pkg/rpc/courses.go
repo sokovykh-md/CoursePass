@@ -24,6 +24,8 @@ func NewCoursesService(dbc db.DB, logger embedlog.Logger) *CoursesService {
 	}
 }
 
+//zenrpc:401 invalid token
+//zenrpc:404 not found
 func (cs *CoursesService) Me(ctx context.Context) (*Student, error) {
 	studentID, ok := studentIDFromContext(ctx)
 	if !ok || studentID <= 0 {
@@ -56,6 +58,9 @@ func (cs *CoursesService) List(ctx context.Context, page, pageSize int) ([]Cours
 	return newCourseSummaries(courses), nil
 }
 
+// zenrpc:-32602 invalid params
+//
+//zenrpc:404 not found
 func (cs *CoursesService) ByID(ctx context.Context, courseID int) (*Course, error) {
 	if courseID < 1 {
 		return nil, newInvalidParamsError("courseId", "must be greater than 0")

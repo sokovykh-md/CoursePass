@@ -78,6 +78,9 @@ func (AuthService) SMD() smd.ServiceInfo {
 						},
 					},
 				},
+				Errors: map[int]string{
+					-32602: "invalid params",
+				},
 			},
 			"Login": {
 				Parameters: []smd.JSONSchema{
@@ -108,6 +111,9 @@ func (AuthService) SMD() smd.ServiceInfo {
 							Type: smd.String,
 						},
 					},
+				},
+				Errors: map[int]string{
+					-32602: "invalid params",
 				},
 			},
 		},
@@ -201,6 +207,10 @@ func (CoursesService) SMD() smd.ServiceInfo {
 							Type: smd.String,
 						},
 					},
+				},
+				Errors: map[int]string{
+					401: "invalid token",
+					404: "not found",
 				},
 			},
 			"List": {
@@ -301,6 +311,10 @@ func (CoursesService) SMD() smd.ServiceInfo {
 						},
 					},
 				},
+				Errors: map[int]string{
+					-32602: "invalid params",
+					404:    "not found",
+				},
 			},
 		},
 	}
@@ -398,6 +412,10 @@ func (ExamService) SMD() smd.ServiceInfo {
 						},
 					},
 				},
+				Errors: map[int]string{
+					-32602: "invalid params",
+					401:    "invalid token",
+				},
 			},
 			"GetQuestion": {
 				Parameters: []smd.JSONSchema{
@@ -456,6 +474,10 @@ func (ExamService) SMD() smd.ServiceInfo {
 						},
 					},
 				},
+				Errors: map[int]string{
+					-32602: "invalid params",
+					401:    "invalid token",
+				},
 			},
 			"Answer": {
 				Parameters: []smd.JSONSchema{
@@ -475,6 +497,10 @@ func (ExamService) SMD() smd.ServiceInfo {
 							"type": smd.Integer,
 						},
 					},
+				},
+				Errors: map[int]string{
+					-32602: "invalid params",
+					401:    "invalid token",
 				},
 			},
 			"Submit": {
@@ -510,6 +536,10 @@ func (ExamService) SMD() smd.ServiceInfo {
 							Type: smd.Integer,
 						},
 					},
+				},
+				Errors: map[int]string{
+					-32602: "invalid params",
+					401:    "invalid token",
 				},
 			},
 			"History": {
@@ -556,6 +586,9 @@ func (ExamService) SMD() smd.ServiceInfo {
 							},
 						},
 					},
+				},
+				Errors: map[int]string{
+					401: "invalid token",
 				},
 			},
 		},

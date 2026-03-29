@@ -6,7 +6,6 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"courses/pkg/coursepass"
 	"courses/pkg/rpc"
 
 	"github.com/labstack/echo/v4"
@@ -61,10 +60,14 @@ func (a *App) registerDebugHandlers() {
 
 // registerAPIHandlers registers main rpc server.
 func (a *App) registerAPIHandlers() {
-	srv := rpc.New(a.db, a.Logger, coursepass.AuthConfig{
-		JWTSecret:     a.cfg.Auth.JWTSecret,
-		JWTTTLSeconds: a.cfg.Auth.JWTTTLSeconds,
-	}, a.cfg.Server.IsDevel, a.cfg.VFS.WebPath)
+	srv := rpc.New(
+		a.db,
+		a.Logger,
+		a.cfg.Auth.JWTSecret,
+		a.cfg.Auth.JWTTTLSeconds,
+		a.cfg.Server.IsDevel,
+		a.cfg.VFS.WebPath,
+	)
 	gen := rpcgen.FromSMD(srv.SMD())
 
 	a.echo.Any("/v1/rpc/", appkit.EchoHandler(appkit.XRequestID(srv)))

@@ -26,6 +26,9 @@ func NewExamService(dbc db.DB, logger embedlog.Logger, mediaWebPath string) *Exa
 	}
 }
 
+// zenrpc:-32602 invalid params
+//
+//zenrpc:401 invalid token
 func (es *ExamService) Start(ctx context.Context, courseID int) (*ExamStart, error) {
 	if courseID < 1 {
 		return nil, newInvalidParamsError("courseID", "must be greater than 0")
@@ -44,6 +47,9 @@ func (es *ExamService) Start(ctx context.Context, courseID int) (*ExamStart, err
 	return newExamStart(exam), nil
 }
 
+// zenrpc:-32602 invalid params
+//
+//zenrpc:401 invalid token
 func (es *ExamService) GetQuestion(ctx context.Context, examID, questionID int) (*Question, error) {
 	if examID < 1 {
 		return nil, newInvalidParamsError("examId", "must be greater than 0")
@@ -65,6 +71,9 @@ func (es *ExamService) GetQuestion(ctx context.Context, examID, questionID int) 
 	return newQuestion(question, es.mediaWebPath), nil
 }
 
+// zenrpc:-32602 invalid params
+//
+//zenrpc:401 invalid token
 func (es *ExamService) Answer(ctx context.Context, examID, questionID int, optionIDs []int) error {
 	if examID < 1 {
 		return newInvalidParamsError("examId", "must be greater than 0")
@@ -89,6 +98,9 @@ func (es *ExamService) Answer(ctx context.Context, examID, questionID int, optio
 	return nil
 }
 
+// zenrpc:-32602 invalid params
+//
+//zenrpc:401 invalid token
 func (es *ExamService) Submit(ctx context.Context, examID int) (*ExamResult, error) {
 	if examID < 1 {
 		return nil, newInvalidParamsError("examId", "must be greater than 0")
@@ -107,6 +119,7 @@ func (es *ExamService) Submit(ctx context.Context, examID int) (*ExamResult, err
 	return newExamResult(exam), nil
 }
 
+//zenrpc:401 invalid token
 func (es *ExamService) History(ctx context.Context, page, pageSize int) ([]ExamSummary, error) {
 	if page < 1 {
 		page = 1

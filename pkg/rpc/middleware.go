@@ -30,7 +30,7 @@ type tokenClaims struct {
 	Iat   int64
 }
 
-func authMiddleware(authCfg coursepass.AuthConfig, logger embedlog.Logger) zenrpc.MiddlewareFunc {
+func authMiddleware(jwtSecret string, logger embedlog.Logger) zenrpc.MiddlewareFunc {
 	return func(h zenrpc.InvokeFunc) zenrpc.InvokeFunc {
 		return func(ctx context.Context, method string, params json.RawMessage) zenrpc.Response {
 			_, ok := zenrpc.RequestFromContext(ctx)
@@ -54,7 +54,7 @@ func authMiddleware(authCfg coursepass.AuthConfig, logger embedlog.Logger) zenrp
 				)
 			}
 
-			studentID, err := validateJWT(authCfg.JWTSecret, token)
+			studentID, err := validateJWT(jwtSecret, token)
 			if err != nil {
 				logger.Error(ctx, "auth middleware: token validation failed", "err", err)
 				return zenrpc.NewResponseError(
