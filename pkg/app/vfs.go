@@ -3,8 +3,8 @@ package app
 import (
 	"net/http"
 
-	"apisrv/pkg/db"
-	"apisrv/pkg/vt"
+	"courses/pkg/db"
+	"courses/pkg/vt"
 
 	"github.com/labstack/echo/v4"
 	"github.com/vmkteam/appkit"
@@ -26,7 +26,6 @@ func (a *App) RegisterVFS(cfg vfs.Config) error {
 	a.echo.Any("/v1/vfs/upload/file", appkit.EchoHandler(vt.HTTPAuthMiddleware(cr, vf.UploadHandler(vfsRepo))))
 	a.echo.Any("/v1/vfs/upload/hash", echo.WrapHandler(vt.HTTPAuthMiddleware(cr, vf.HashUploadHandler(&vfsRepo))))
 	a.echo.GET(a.cfg.VFS.WebPath, echo.WrapHandler(http.StripPrefix(a.cfg.VFS.WebPath, http.FileServer(http.Dir(a.cfg.VFS.Path)))))
-	vt.WebPath = a.cfg.VFS.WebPath
 
 	a.vtsrv.Register(NSVFS, vfs.NewService(vfsRepo, vf, a.dbc))
 

@@ -1,0 +1,322 @@
+package exam
+
+import (
+	"testing"
+	"time"
+
+	"courses/pkg/coursepass"
+	"courses/pkg/db"
+	dbtest "courses/pkg/db/test"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+type examFixture struct {
+	dbo       db.DB
+	manager   *Manager
+	repo      db.CoursesRepo
+	student   *db.Student
+	course    *db.Course
+	questions []*db.Question
+	cleanup   func()
+}
+
+func newExamFixture(t *testing.T, questionCount int) examFixture {
+	t.Helper()
+
+	dbo, logger := dbtest.Setup(t)
+	manager := NewManager(dbo, logger, "/media/")
+	repo := db.NewCoursesRepo(dbo)
+
+	var cleanups []func()
+
+	student, studentCleanup := dbtest.Student(
+		t,
+		dbo.DB,
+		&db.Student{StatusID: 1},
+		dbtest.WithFakeStudent,
+	)
+	cleanups = append(cleanups, studentCleanup)
+
+	now := time.Now()
+	availableFrom := now.Add(-1 * time.Hour)
+	availableTo := now.Add(1 * time.Hour)
+	course, courseCleanup := dbtest.Course(
+		t,
+		dbo.DB,
+		&db.Course{
+			AvailabilityType: "always",
+			AvailableFrom:    &availableFrom,
+			AvailableTo:      &availableTo,
+			StatusID:         1,
+		},
+		dbtest.WithFakeCourse,
+	)
+	cleanups = append(cleanups, courseCleanup)
+
+	questions := make([]*db.Question, 0, questionCount)
+	for i := 0; i < questionCount; i++ {
+		question, questionCleanup := dbtest.Question(
+			t,
+			dbo.DB,
+			&db.Question{
+				CourseID:     course.ID,
+				QuestionType: QuestionTypeSingleChoice,
+				Options: db.QuestionOptions{
+					{OptionID: 1, OptionText: "A", IsCorrect: true, DisplaySort: 1},
+					{OptionID: 2, OptionText: "B", IsCorrect: false, DisplaySort: 2},
+				},
+			},
+			dbtest.WithQuestionRelations,
+			dbtest.WithFakeQuestion,
+		)
+		cleanups = append(cleanups, questionCleanup)
+		questions = append(questions, question)
+	}
+
+	return examFixture{
+		dbo:       dbo,
+		manager:   manager,
+		repo:      repo,
+		student:   student,
+		course:    course,
+		questions: questions,
+		cleanup: func() {
+			for i := len(cleanups) - 1; i >= 0; i-- {
+				cleanups[i]()
+			}
+		},
+	}
+}
+
+func TestExamManager_Start(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		// Arrange
+		fx := newExamFixture(t, 2)
+		defer fx.cleanup()
+
+		// Act
+		start, err := fx.manager.Start(t.Context(), fx.student.ID, fx.course.ID)
+
+		// Assert
+		require.NoError(t, err)
+		require.Positive(t, start.ID)
+		assert.Len(t, start.QuestionIDs, 2)
+		assert.Nil(t, start.FinishedAt)
+
+		defer func() {
+			_, deleteErr := fx.repo.DeleteExam(t.Context(), start.ID)
+			require.NoError(t, deleteErr)
+		}()
+
+		exam, findErr := fx.repo.OneExam(t.Context(), &db.ExamSearch{ID: &start.ID, StudentID: &fx.student.ID})
+		require.NoError(t, findErr)
+		require.NotNil(t, exam)
+		assert.Equal(t, ExamStatusInProgress, exam.Status)
+		assert.Len(t, exam.QuestionIDs, 2)
+	})
+
+	t.Run("no questions", func(t *testing.T) {
+		// Arrange
+		fx := newExamFixture(t, 0)
+		defer fx.cleanup()
+
+		// Act
+		_, err := fx.manager.Start(t.Context(), fx.student.ID, fx.course.ID)
+
+		// Assert
+		require.Error(t, err)
+		assert.ErrorIs(t, err, coursepass.ErrNoQuestions)
+	})
+
+	t.Run("already started", func(t *testing.T) {
+		// Arrange
+		fx := newExamFixture(t, 1)
+		defer fx.cleanup()
+
+		firstStart, err := fx.manager.Start(t.Context(), fx.student.ID, fx.course.ID)
+		require.NoError(t, err)
+		defer func() {
+			_, deleteErr := fx.repo.DeleteExam(t.Context(), firstStart.ID)
+			require.NoError(t, deleteErr)
+		}()
+
+		// Act
+		_, err = fx.manager.Start(t.Context(), fx.student.ID, fx.course.ID)
+
+		// Assert
+		require.Error(t, err)
+		assert.ErrorIs(t, err, coursepass.ErrExamAlreadyStarted)
+	})
+}
+
+func TestExamManager_Question_NotInExam(t *testing.T) {
+	// Arrange
+	fx := newExamFixture(t, 1)
+	defer fx.cleanup()
+
+	start, err := fx.manager.Start(t.Context(), fx.student.ID, fx.course.ID)
+	require.NoError(t, err)
+	defer func() {
+		_, deleteErr := fx.repo.DeleteExam(t.Context(), start.ID)
+		require.NoError(t, deleteErr)
+	}()
+
+	// Act
+	_, err = fx.manager.Question(t.Context(), fx.student.ID, dbtest.NextID(), start.ID)
+
+	// Assert
+	require.Error(t, err)
+	assert.ErrorIs(t, err, coursepass.ErrQuestionNotInExam)
+}
+
+func TestExamManager_SaveAnswer_InvalidOptionIDs(t *testing.T) {
+	// Arrange
+	fx := newExamFixture(t, 1)
+	defer fx.cleanup()
+
+	start, err := fx.manager.Start(t.Context(), fx.student.ID, fx.course.ID)
+	require.NoError(t, err)
+	defer func() {
+		_, deleteErr := fx.repo.DeleteExam(t.Context(), start.ID)
+		require.NoError(t, deleteErr)
+	}()
+
+	// Act
+	err = fx.manager.SaveAnswer(t.Context(), fx.student.ID, start.ID, fx.questions[0].ID, []int{999})
+
+	// Assert
+	require.Error(t, err)
+	assert.ErrorIs(t, err, coursepass.ErrInvalidOptionIDs)
+}
+
+func TestExamManager_SaveAnswer_AnswerUnavailable(t *testing.T) {
+	t.Run("already answered", func(t *testing.T) {
+		fx := newExamFixture(t, 1)
+		defer fx.cleanup()
+
+		start, err := fx.manager.Start(t.Context(), fx.student.ID, fx.course.ID)
+		require.NoError(t, err)
+		defer func() {
+			_, deleteErr := fx.repo.DeleteExam(t.Context(), start.ID)
+			require.NoError(t, deleteErr)
+		}()
+
+		require.NoError(t, fx.manager.SaveAnswer(t.Context(), fx.student.ID, start.ID, fx.questions[0].ID, []int{1}))
+
+		err = fx.manager.SaveAnswer(t.Context(), fx.student.ID, start.ID, fx.questions[0].ID, []int{1})
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, coursepass.ErrAnswerUnavailable)
+	})
+
+	t.Run("question not in exam", func(t *testing.T) {
+		fx := newExamFixture(t, 1)
+		defer fx.cleanup()
+
+		start, err := fx.manager.Start(t.Context(), fx.student.ID, fx.course.ID)
+		require.NoError(t, err)
+		defer func() {
+			_, deleteErr := fx.repo.DeleteExam(t.Context(), start.ID)
+			require.NoError(t, deleteErr)
+		}()
+
+		err = fx.manager.SaveAnswer(t.Context(), fx.student.ID, start.ID, dbtest.NextID(), []int{1})
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, coursepass.ErrAnswerUnavailable)
+	})
+}
+
+func TestExamManager_Submit_Success(t *testing.T) {
+	// Arrange
+	fx := newExamFixture(t, 2)
+	defer fx.cleanup()
+
+	start, err := fx.manager.Start(t.Context(), fx.student.ID, fx.course.ID)
+	require.NoError(t, err)
+	defer func() {
+		_, deleteErr := fx.repo.DeleteExam(t.Context(), start.ID)
+		require.NoError(t, deleteErr)
+	}()
+
+	require.NoError(t, fx.manager.SaveAnswer(t.Context(), fx.student.ID, start.ID, fx.questions[0].ID, []int{1}))
+	require.NoError(t, fx.manager.SaveAnswer(t.Context(), fx.student.ID, start.ID, fx.questions[1].ID, []int{2}))
+
+	// Act
+	result, err := fx.manager.Submit(t.Context(), fx.student.ID, start.ID)
+
+	// Assert
+	require.NoError(t, err)
+	assert.Equal(t, start.ID, result.ID)
+	require.NotNil(t, result.TotalQuestions)
+	assert.Equal(t, 2, *result.TotalQuestions)
+	require.NotNil(t, result.CorrectAnswers)
+	assert.Equal(t, 1, *result.CorrectAnswers)
+	require.NotNil(t, result.FinalScore)
+	assert.Equal(t, 50.0, *result.FinalScore)
+	assert.Equal(t, ExamStatusFailed, result.Status)
+
+	exam, findErr := fx.repo.OneExam(t.Context(), &db.ExamSearch{ID: &start.ID, StudentID: &fx.student.ID})
+	require.NoError(t, findErr)
+	require.NotNil(t, exam)
+	assert.Equal(t, ExamStatusFailed, exam.Status)
+	require.NotNil(t, exam.FinishedAt)
+}
+
+func TestExamManager_MyList_OnlyFinished(t *testing.T) {
+	// Arrange
+	fx := newExamFixture(t, 1)
+	defer fx.cleanup()
+
+	inProgressExam, inProgressCleanup := dbtest.Exam(
+		t,
+		fx.dbo.DB,
+		&db.Exam{
+			CourseID:    fx.course.ID,
+			StudentID:   fx.student.ID,
+			QuestionIDs: []int{fx.questions[0].ID},
+			Status:      ExamStatusInProgress,
+			Answers:     db.ExamAnswers{},
+		},
+		dbtest.WithExamRelations,
+		dbtest.WithFakeExam,
+	)
+	defer inProgressCleanup()
+
+	finishedAt := time.Now()
+	finalScore := 100.0
+	finishedExam, finishedCleanup := dbtest.Exam(
+		t,
+		fx.dbo.DB,
+		&db.Exam{
+			CourseID:       fx.course.ID,
+			StudentID:      fx.student.ID,
+			QuestionIDs:    []int{fx.questions[0].ID},
+			Status:         ExamStatusPassed,
+			Answers:        db.ExamAnswers{},
+			TotalQuestions: ptr(1),
+			CorrectAnswers: ptr(1),
+			FinalScore:     &finalScore,
+			FinishedAt:     &finishedAt,
+		},
+		dbtest.WithExamRelations,
+		dbtest.WithFakeExam,
+	)
+	defer finishedCleanup()
+
+	// Act
+	list, err := fx.manager.MyList(t.Context(), fx.student.ID, 1, 10)
+
+	// Assert
+	require.NoError(t, err)
+	require.Len(t, list, 1)
+	assert.Equal(t, finishedExam.ID, list[0].ID)
+	assert.Contains(t, []string{ExamStatusPassed, ExamStatusFailed}, list[0].Status)
+	assert.NotEqual(t, inProgressExam.ID, list[0].ID)
+}
+
+func ptr[T any](v T) *T {
+	return &v
+}

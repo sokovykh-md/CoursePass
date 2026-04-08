@@ -3,7 +3,7 @@ package vt
 import (
 	"net/http"
 
-	"apisrv/pkg/db"
+	"courses/pkg/db"
 
 	"github.com/vmkteam/embedlog"
 	zm "github.com/vmkteam/zenrpc-middleware"
@@ -19,6 +19,13 @@ const (
 const (
 	NSAuth = "auth"
 	NSUser = "user"
+
+	NSCourse    = "course"
+	NSExam      = "exam"
+	NSQuestion  = "question"
+	NSStudent   = "student"
+	NSVfsFile   = "vfsFile"
+	NSVfsFolder = "vfsFolder"
 )
 
 var (
@@ -66,6 +73,13 @@ func New(dbo db.DB, logger embedlog.Logger, isDevel bool) *zenrpc.Server {
 	rpc.RegisterAll(map[string]zenrpc.Invoker{
 		NSAuth: NewAuthService(dbo, logger),
 		NSUser: NewUserService(dbo, logger),
+
+		NSCourse:    NewCourseService(dbo, logger),
+		NSExam:      NewExamService(dbo, logger),
+		NSQuestion:  NewQuestionService(dbo, logger),
+		NSStudent:   NewStudentService(dbo, logger),
+		NSVfsFile:   NewVfsFileService(dbo, logger),
+		NSVfsFolder: NewVfsFolderService(dbo, logger),
 	})
 
 	return rpc

@@ -3,7 +3,7 @@ package rpc
 import (
 	"net/http"
 
-	"apisrv/pkg/db"
+	"courses/pkg/db"
 
 	"github.com/vmkteam/embedlog"
 	zm "github.com/vmkteam/zenrpc-middleware"
@@ -13,6 +13,20 @@ import (
 var (
 	ErrNotImplemented = zenrpc.NewStringError(http.StatusInternalServerError, "not implemented")
 	ErrInternal       = zenrpc.NewStringError(http.StatusInternalServerError, "internal error")
+	ErrNotFound       = zenrpc.NewStringError(http.StatusNotFound, "not found")
+
+	ErrInvalidParams      = zenrpc.NewStringError(zenrpc.InvalidParams, "invalid params")
+	ErrInvalidToken       = zenrpc.NewStringError(http.StatusUnauthorized, "invalid token")
+	ErrInvalidCredentials = zenrpc.NewStringError(http.StatusUnauthorized, "invalid credentials")
+	ErrLoginExists        = zenrpc.NewStringError(http.StatusConflict, "login exists")
+	ErrEmailExists        = zenrpc.NewStringError(http.StatusConflict, "email exists")
+	ErrExamConflict       = zenrpc.NewStringError(http.StatusConflict, "exam conflict")
+)
+
+const (
+	NSAuth   = "auth"
+	NSCourse = "course"
+	NSExam   = "exam"
 )
 
 var allowDebugFn = func() zm.AllowDebugFunc {
@@ -24,7 +38,7 @@ var allowDebugFn = func() zm.AllowDebugFunc {
 //go:generate go tool zenrpc
 
 // New returns new zenrpc Server.
-func New(dbo db.DB, logger embedlog.Logger, isDevel bool) *zenrpc.Server {
+func New(dbo db.DB, logger embedlog.Logger, jwtSecret string, jwtTTLSeconds int, isDevel bool, mediaWebPath string) *zenrpc.Server {
 	rpc := zenrpc.NewServer(zenrpc.Options{
 		ExposeSMD: true,
 		AllowCORS: true,
@@ -43,17 +57,30 @@ func New(dbo db.DB, logger embedlog.Logger, isDevel bool) *zenrpc.Server {
 	rpc.Use(
 		zm.WithSLog(logger.Print, zm.DefaultServerName, nil),
 		zm.WithErrorSLog(logger.Print, zm.DefaultServerName, nil),
+		authMiddleware(jwtSecret, logger),
 	)
 
 	// services
 	rpc.RegisterAll(map[string]zenrpc.Invoker{
-		// "sample": NewSampleService(db, logger),
+		NSAuth:   NewAuthService(dbo, logger, jwtSecret, jwtTTLSeconds),
+		NSCourse: NewCoursesService(dbo, logger),
+		NSExam:   NewExamService(dbo, logger, mediaWebPath),
 	})
 
 	return rpc
 }
 
-//nolint:unused
 func newInternalError(err error) *zenrpc.Error {
 	return zenrpc.NewError(http.StatusInternalServerError, err)
+}
+
+func newInvalidParamsError(field, reason string) *zenrpc.Error {
+	return &zenrpc.Error{
+		Code:    ErrInvalidParams.Code,
+		Message: ErrInvalidParams.Message,
+		Data: map[string]any{
+			"field":  field,
+			"reason": reason,
+		},
+	}
 }

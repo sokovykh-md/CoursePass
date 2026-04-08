@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"apisrv/pkg/db"
-	"apisrv/pkg/db/test"
+	"courses/pkg/db"
+	"courses/pkg/db/test"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

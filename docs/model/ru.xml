@@ -1,0 +1,246 @@
+<Translation xmlns:xsi="" xmlns:xsd="">
+    <Language>ru</Language>
+    <Namespaces>
+        <Namespace Name="courses">
+            <Entities>
+                <Entity Name="Course" Key="course">
+                    <Crumbs>
+                        <courseAdd>Добавить</courseAdd>
+                        <courseEdit>Редактировать</courseEdit>
+                        <courseList>Курсы</courseList>
+                    </Crumbs>
+                    <Form>
+                        <titleLabel>Название</titleLabel>
+                        <descriptionLabel>Описание</descriptionLabel>
+                        <availabilityTypeLabel>Тип доступности</availabilityTypeLabel>
+                        <availableFromLabel>Доступен с</availableFromLabel>
+                        <availableToLabel>Доступен до</availableToLabel>
+                        <timeLimitMinutesLabel>Лимит времени (мин)</timeLimitMinutesLabel>
+                        <statusIdLabel>Статус</statusIdLabel>
+                    </Form>
+                    <List>
+                        <Title>Курсы</Title>
+                        <Filter>
+                            <quickFilterPlaceholder>Быстрый поиск</quickFilterPlaceholder>
+                            <title>Название</title>
+                            <description>Описание</description>
+                            <availabilityType>Тип доступности</availabilityType>
+                            <availableFrom>Доступен с</availableFrom>
+                            <availableTo>Доступен до</availableTo>
+                            <timeLimitMinutes>Лимит времени (мин)</timeLimitMinutes>
+                            <createdAt>Создано</createdAt>
+                            <statusId>Статус</statusId>
+                            <ids>ID</ids>
+                            <availableToFrom>Доступен до (от)</availableToFrom>
+                            <availableFromTo>Доступен с (до)</availableFromTo>
+                        </Filter>
+                        <Headers>
+                            <title>Название</title>
+                            <description>Описание</description>
+                            <availabilityType>Тип доступности</availabilityType>
+                            <availableFrom>Доступен с</availableFrom>
+                            <availableTo>Доступен до</availableTo>
+                            <timeLimitMinutes>Лимит времени (мин)</timeLimitMinutes>
+                            <status>Статус</status>
+                            <actions>Действия</actions>
+                        </Headers>
+                    </List>
+                </Entity>
+                <Entity Name="Exam" Key="exam">
+                    <Crumbs>
+                        <examAdd>Добавить</examAdd>
+                        <examEdit>Редактировать</examEdit>
+                        <examList>Экзамены</examList>
+                    </Crumbs>
+                    <Form>
+                        <courseIdLabel>Курс</courseIdLabel>
+                        <studentIdLabel>Студент</studentIdLabel>
+                        <totalQuestionsLabel>Всего вопросов</totalQuestionsLabel>
+                        <correctAnswersLabel>Правильных ответов</correctAnswersLabel>
+                        <statusLabel>Статус</statusLabel>
+                        <finalScoreLabel>Итоговый балл</finalScoreLabel>
+                        <finishedAtLabel>Завершен</finishedAtLabel>
+                        <questionIdsLabel>Вопросы экзамена</questionIdsLabel>
+                    </Form>
+                    <List>
+                        <Title>Экзамены</Title>
+                        <Filter>
+                            <quickFilterPlaceholder>Быстрый поиск</quickFilterPlaceholder>
+                            <courseId>Курс</courseId>
+                            <studentId>Студент</studentId>
+                            <totalQuestions>Всего вопросов</totalQuestions>
+                            <correctAnswers>Правильных ответов</correctAnswers>
+                            <status>Статус</status>
+                            <finalScore>Итоговый балл</finalScore>
+                            <finishedAt>Завершен</finishedAt>
+                            <createdAt>Создано</createdAt>
+                            <ids>ID</ids>
+                            <statusIn>Статусы</statusIn>
+                        </Filter>
+                        <Headers>
+                            <course>Курс</course>
+                            <student>Студент</student>
+                            <totalQuestions>Всего вопросов</totalQuestions>
+                            <correctAnswers>Правильных ответов</correctAnswers>
+                            <status>Статус</status>
+                            <finalScore>Итоговый балл</finalScore>
+                            <finishedAt>Завершен</finishedAt>
+                            <actions>Действия</actions>
+                        </Headers>
+                    </List>
+                </Entity>
+                <Entity Name="Question" Key="question">
+                    <Crumbs>
+                        <questionAdd>Добавить</questionAdd>
+                        <questionEdit>Редактировать</questionEdit>
+                        <questionList>Вопросы</questionList>
+                    </Crumbs>
+                    <Form>
+                        <courseIdLabel>Курс</courseIdLabel>
+                        <photoFileIdLabel>Файл изображения</photoFileIdLabel>
+                        <questionTextLabel>Текст вопроса</questionTextLabel>
+                        <questionTypeLabel>Тип вопроса</questionTypeLabel>
+                    </Form>
+                    <List>
+                        <Title>Вопросы</Title>
+                        <Filter>
+                            <quickFilterPlaceholder>Быстрый поиск</quickFilterPlaceholder>
+                            <courseId>Курс</courseId>
+                            <photoFileId>Файл изображения</photoFileId>
+                            <questionText>Текст вопроса</questionText>
+                            <questionType>Тип вопроса</questionType>
+                            <createdAt>Создано</createdAt>
+                            <ids>ID</ids>
+                        </Filter>
+                        <Headers>
+                            <course>Курс</course>
+                            <photoFile>Файл изображения</photoFile>
+                            <questionText>Текст вопроса</questionText>
+                            <questionType>Тип вопроса</questionType>
+                            <actions>Действия</actions>
+                        </Headers>
+                    </List>
+                </Entity>
+                <Entity Name="Student" Key="student">
+                    <Crumbs>
+                        <studentAdd>Добавить</studentAdd>
+                        <studentEdit>Редактировать</studentEdit>
+                        <studentList>Студенты</studentList>
+                    </Crumbs>
+                    <Form>
+                        <loginLabel>Логин</loginLabel>
+                        <passwordHashLabel>Хеш пароля</passwordHashLabel>
+                        <firstNameLabel>Имя</firstNameLabel>
+                        <lastNameLabel>Фамилия</lastNameLabel>
+                        <emailLabel>Email</emailLabel>
+                        <statusIdLabel>Статус</statusIdLabel>
+                    </Form>
+                    <List>
+                        <Title>Студенты</Title>
+                        <Filter>
+                            <quickFilterPlaceholder>Быстрый поиск</quickFilterPlaceholder>
+                            <login>Логин</login>
+                            <passwordHash>Хеш пароля</passwordHash>
+                            <firstName>Имя</firstName>
+                            <lastName>Фамилия</lastName>
+                            <email>Email</email>
+                            <createdAt>Создано</createdAt>
+                            <statusId>Статус</statusId>
+                            <ids>ID</ids>
+                        </Filter>
+                        <Headers>
+                            <login>Логин</login>
+                            <passwordHash>Хеш пароля</passwordHash>
+                            <firstName>Имя</firstName>
+                            <lastName>Фамилия</lastName>
+                            <email>Email</email>
+                            <status>Статус</status>
+                            <actions>Действия</actions>
+                        </Headers>
+                    </List>
+                </Entity>
+            </Entities>
+        </Namespace>
+        <Namespace Name="vfs">
+            <Entities>
+                <Entity Name="VfsFile" Key="vfsFile">
+                    <Crumbs>
+                        <vfsFileAdd>Добавить</vfsFileAdd>
+                        <vfsFileEdit>Редактировать</vfsFileEdit>
+                        <vfsFileList>Файлы</vfsFileList>
+                    </Crumbs>
+                    <Form>
+                        <folderIdLabel>Папка</folderIdLabel>
+                        <titleLabel>Название</titleLabel>
+                        <pathLabel>Путь</pathLabel>
+                        <paramsLabel>Параметры</paramsLabel>
+                        <isFavoriteLabel>Избранное</isFavoriteLabel>
+                        <mimeTypeLabel>MIME-тип</mimeTypeLabel>
+                        <fileSizeLabel>Размер</fileSizeLabel>
+                        <fileExistsLabel>Существует</fileExistsLabel>
+                        <statusIdLabel>Статус</statusIdLabel>
+                    </Form>
+                    <List>
+                        <Title>Файлы</Title>
+                        <Filter>
+                            <quickFilterPlaceholder>Быстрый поиск</quickFilterPlaceholder>
+                            <folderId>Папка</folderId>
+                            <title>Название</title>
+                            <path>Путь</path>
+                            <params>Параметры</params>
+                            <isFavorite>Избранное</isFavorite>
+                            <mimeType>MIME-тип</mimeType>
+                            <fileSize>Размер</fileSize>
+                            <fileExists>Существует</fileExists>
+                            <createdAt>Создано</createdAt>
+                            <statusId>Статус</statusId>
+                            <ids>ID</ids>
+                        </Filter>
+                        <Headers>
+                            <title>Название</title>
+                            <path>Путь</path>
+                            <isFavorite>Избранное</isFavorite>
+                            <mimeType>MIME-тип</mimeType>
+                            <fileSize>Размер</fileSize>
+                            <fileExists>Существует</fileExists>
+                            <status>Статус</status>
+                            <actions>Действия</actions>
+                        </Headers>
+                    </List>
+                </Entity>
+                <Entity Name="VfsFolder" Key="vfsFolder">
+                    <Crumbs>
+                        <vfsFolderAdd>Добавить</vfsFolderAdd>
+                        <vfsFolderEdit>Редактировать</vfsFolderEdit>
+                        <vfsFolderList>Папки</vfsFolderList>
+                    </Crumbs>
+                    <Form>
+                        <parentFolderIdLabel>Родительская папка</parentFolderIdLabel>
+                        <titleLabel>Название</titleLabel>
+                        <isFavoriteLabel>Избранное</isFavoriteLabel>
+                        <statusIdLabel>Статус</statusIdLabel>
+                    </Form>
+                    <List>
+                        <Title>Папки</Title>
+                        <Filter>
+                            <quickFilterPlaceholder>Быстрый поиск</quickFilterPlaceholder>
+                            <parentFolderId>Родительская папка</parentFolderId>
+                            <title>Название</title>
+                            <isFavorite>Избранное</isFavorite>
+                            <createdAt>Создано</createdAt>
+                            <statusId>Статус</statusId>
+                            <ids>ID</ids>
+                        </Filter>
+                        <Headers>
+                            <parentFolder>Родительская папка</parentFolder>
+                            <title>Название</title>
+                            <isFavorite>Избранное</isFavorite>
+                            <status>Статус</status>
+                            <actions>Действия</actions>
+                        </Headers>
+                    </List>
+                </Entity>
+            </Entities>
+        </Namespace>
+    </Namespaces>
+</Translation>

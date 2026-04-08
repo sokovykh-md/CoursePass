@@ -56,8 +56,9 @@ run:
 	@go run $(GOFLAGS) $(MAIN) -config=cfg/local.toml -dev
 
 generate:
-	#@go generate ./pkg/rpc
-	@go generate ./pkg/vt
+	@go generate ./pkg/coursepass
+	@go generate ./pkg/rpc
+	@#go generate ./pkg/vt
 
 test:
 	@echo "Running tests"
@@ -80,7 +81,7 @@ db:
 db-test:
 	@$(MAKE) --no-print-directory db PGDATABASE=${TEST_PGDATABASE}
 
-NS := "courses"
+NS := "vfs,courses"
 
 mfd-xml:
 	@mfd-generator xml -c "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)?sslmode=disable" -m ./docs/model/$(NAME).mfd
@@ -89,7 +90,7 @@ mfd-model:
 mfd-repo: --check-ns
 	@mfd-generator repo -m ./docs/model/$(NAME).mfd -p db -o ./pkg/db -n $(NS)
 mfd-db-test:
-	@mfd-generator dbtest -m docs/model/$(NAME).mfd -o ./pkg/db/test -x $(NAME)/pkg/db
+	@mfd-generator dbtest -m docs/model/$(NAME).mfd -o ./pkg/db/test -x $(NAME)/pkg/db --force
 mfd-vt-xml:
 	@mfd-generator xml-vt -m ./docs/model/$(NAME).mfd
 mfd-vt-rpc: --check-ns
@@ -98,10 +99,10 @@ mfd-xml-lang:
 	#TODO: add namespaces support for xml-lang command
 	@mfd-generator xml-lang  -m ./docs/model/$(NAME).mfd
 mfd-vt-template: --check-ns type-script-client
-	@mfd-generator template -m docs/model/$(NAME).mfd  -o ../gold-vt/ -n $(NS)
+	@mfd-generator template -m docs/model/$(NAME).mfd  -o ../CoursePassFrontend/ -n $(NS)
 
 type-script-client: generate
-	@go run $(GOFLAGS) $(MAIN) -config=cfg/local.toml -ts_client > ../gold-vt/src/services/api/factory.ts
+	@go run $(GOFLAGS) $(MAIN) -config=cfg/local.toml -ts_client > ../CoursePassFrontend/src/services/api/factory.ts
 
 
 --check-ns:

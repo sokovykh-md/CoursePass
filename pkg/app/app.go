@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"apisrv/pkg/db"
-	"apisrv/pkg/vt"
+	"courses/pkg/db"
+	"courses/pkg/vt"
 
 	"github.com/go-pg/pg/v10"
 	monitor "github.com/hypnoglow/go-pg-monitor"
@@ -29,6 +29,10 @@ type Config struct {
 	Sentry struct {
 		Environment string
 		DSN         string
+	}
+	Auth struct {
+		JWTSecret     string
+		JWTTTLSeconds int
 	}
 	VFS vfs.Config
 }

@@ -1,7 +1,7 @@
 package vt
 
 import (
-	"apisrv/pkg/db"
+	"courses/pkg/db"
 )
 
 const maxPageSize = 500

@@ -1,16 +1,16 @@
 <Project xmlns:xsi="" xmlns:xsd="">
     <Name>courses.mfd</Name>
     <PackageNames>
-        <string>common</string>
+        <string>courses</string>
         <string>vfs</string>
     </PackageNames>
-    <TableMapping>
-        <common>users</common>
-        <vfs>vfsFiles,vfsFolders</vfs>
-    </TableMapping>
     <Languages>
         <string>ru</string>
     </Languages>
     <GoPGVer>10</GoPGVer>
     <CustomTypes></CustomTypes>
+    <TableMapping>
+        <courses>users,students,questions,courses,exams</courses>
+        <vfs>vfsFiles,vfsFolders</vfs>
+    </TableMapping>
 </Project>
